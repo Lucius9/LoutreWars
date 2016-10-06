@@ -23,8 +23,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
 	UPaperSpriteComponent *SpriteComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="Sprite")
-	UPaperSprite *Sprite=NULL;	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
+	UPaperSpriteComponent *OverlaySpriteComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
+	UPaperSpriteComponent *PathOverlaySpriteComponent;
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
+	UPaperSprite *OverlaySprite = NULL;*/
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="Sprite")
+	UPaperSprite *Sprite=NULL;	*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flipbook")
 	UPaperFlipbookComponent *FlipbookComponent = NULL;
@@ -46,6 +55,9 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
-	
-	
+	void EnableRangeOverlay();
+	void DisableRangeOverlay();
+
+	void EnablePathOverlay();
+	void DisablePathOverlay();
 };

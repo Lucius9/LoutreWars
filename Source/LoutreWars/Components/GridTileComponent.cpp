@@ -1,8 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "LoutreWars.h"
+#include "limits"
+#include "NavGrid.h"
 #include "GridTileComponent.h"
 
+#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 // Sets default values for this component's properties
 UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializer) 
@@ -11,6 +14,16 @@ UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializ
 	Extent = ObjectInitializer.CreateDefaultSubobject<UBoxComponent>(this,"Extent");
 	Extent->SetupAttachment(this);
 	Extent->ShapeColor = FColor::White;
+	Extent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Extent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	Extent->SetCollisionResponseToChannel(ANavGrid::ECC_Tile, ECollisionResponse::ECR_Block);
+	Extent->SetHiddenInGame(false);
+	Extent->OnBeginCursorOver.AddDynamic(this, &UGridTileComponent::OnTileCursorOver);	
+
+
+	PawnLocation = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this,"PawnLocation");
+	PawnLocation->SetupAttachment(this);
+	PawnLocation->SetRelativeLocation(FVector(0.0f, 1.0f, 0.0f));
 	
 
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
@@ -32,7 +45,7 @@ void UGridTileComponent::OnComponentCreated()
 	{
 		USceneComponent* Child = Children[i];
 		UPaperFlipbookComponent *FlipbookComponent = Cast<UPaperFlipbookComponent>(Child);
-		UPaperSpriteComponent *SpriteComponent = Cast<UPaperSpriteComponent>(Child);
+		UPaperSpriteComponent *MainSpriteComponent = Cast<UPaperSpriteComponent>(Child);
 		if (FlipbookComponent)
 		{
 			if (FlipbookComponent->GetFlipbook() != NULL)
@@ -43,11 +56,11 @@ void UGridTileComponent::OnComponentCreated()
 
 			}
 		}
-		else if (SpriteComponent)
+		else if (MainSpriteComponent)
 		{
-			if (SpriteComponent->GetSprite() != NULL)
+			if (MainSpriteComponent->GetSprite() != NULL)
 			{
-				Size = SpriteComponent->GetSprite()->GetSourceSize();
+				Size = MainSpriteComponent->GetSprite()->GetSourceSize();
 				sizeInitialized = true;
 
 			}			
@@ -57,7 +70,15 @@ void UGridTileComponent::OnComponentCreated()
 	{
 		Size = FVector2D(16.0f, 16.0f);
 	}
-	Extent->SetBoxExtent(FVector((Size.X)/2,2.0f,(Size.Y)/2));
+	Extent->SetBoxExtent(FVector((Size.X)/2,0.0f,(Size.Y)/2));
+}
+
+void UGridTileComponent::BeginPlay()
+{
+	if (!Grid)
+	{
+		Grid = ANavGrid::GetNavGrid(GetWorld());
+	}	
 }
 
 float UGridTileComponent::GetCost()
@@ -70,62 +91,30 @@ void UGridTileComponent::SetCost(float cost)
 	this->Cost = cost;
 }
 
-void UGridTileComponent::ComputeContactPoints()
-{
-	int XExtent = Extent->GetScaledBoxExtent().X;
-	int ZExtent = Extent->GetScaledBoxExtent().Z;
-	for (int i = -XExtent; i < XExtent; i += XExtent)
-	{
-		for (int j = -ZExtent; j < ZExtent; j += ZExtent)
-		{
-			FVector ComponentLocation = FVector(i, 0, j);
-			FVector WorldLocation = GetComponentLocation() + ComponentLocation;
-			ContactPoints.Add(WorldLocation);
-		}
-	}
-}
-
 void UGridTileComponent::ComputeNeighbours()
-{
+{	
 	UWorld *World = this->GetWorld();
 	for (TObjectIterator<UGridTileComponent> Itr; Itr; ++Itr)
 	{
 		if (Itr->GetWorld() == World && *Itr != this)
-		{
-			bool Added = false; // stop comparing CPs when we know a tile is a neighbour
-			for (const FVector &OtherCP : *Itr->GetContactPoints())
+		{			
+			float distance = (GetComponentLocation() - Itr->GetComponentLocation()).Size();			
+			
+			//We don't naviate in diagonal, so the max distance between neighbours should be the greatest box extent coordinate multiplicated by 2
+			float MaxLenght = FMath::Max(Extent->GetScaledBoxExtent().X, Extent->GetScaledBoxExtent().Z);				
+			if (distance <= MaxLenght*2)
 			{
-				for (const FVector &MyCP : *GetContactPoints())
-				{
-					// the max length between 2 neightbours is the maximum BoxExtent size on X or Z cause we don't move in diagonal
-					int MaxLenght = FMath::Max(Extent->GetScaledBoxExtent().X, Extent->GetScaledBoxExtent().Z);
-
-					if ((OtherCP - MyCP).Size() <= MaxLenght)
-					{
-						Neighbours.Add(*Itr);
-						Added = true;
-						break;
-					}
-				}
-				if (Added) { break; }
-			}
+				Neighbours.Add(*Itr);					
+			}		
 		}
 	}
 }
 
-TArray<FVector>* UGridTileComponent::GetContactPoints()
-{
-	if (!ContactPoints.Num())
-	{
-		ComputeContactPoints();
-	}
-	return &ContactPoints;
-}
 
 TArray<UGridTileComponent*>* UGridTileComponent::GetNeighbours()
 {
-	if (!Neighbours.Num())
-	{
+	if (Neighbours.Num()==0)
+	{		
 		ComputeNeighbours();
 	}
 	return &Neighbours;
@@ -146,37 +135,67 @@ bool UGridTileComponent::Traversable(float MaxWalkAngle)
 
 bool UGridTileComponent::Obstructed(const FVector & FromPos, const UCapsuleComponent & CollisionCapsule)
 {
-	return Obstructed(FromPos, GetComponentLocation(), CollisionCapsule);
+		return Obstructed(FromPos, GetComponentLocation(), CollisionCapsule);
 }
 
 bool UGridTileComponent::Obstructed(const FVector &FromPos, const FVector & To, const UCapsuleComponent & CollisionCapsule)
 {
-	FHitResult OutHit;
-	FVector Start = Start + CollisionCapsule.RelativeLocation;
-	FVector End = Start + CollisionCapsule.RelativeLocation;
+	
+	FHitResult OutHit;	
+	FVector Start = FromPos + CollisionCapsule.RelativeLocation;	
+	FVector End = To +  CollisionCapsule.RelativeLocation;	
 	FQuat Rot = FQuat::Identity;
 	UWorld * World = CollisionCapsule.GetWorld();
 
 	FCollisionShape CollisionShape = CollisionCapsule.GetCollisionShape();
 	FCollisionQueryParams CollisionQueryParam;
 	CollisionQueryParam.AddIgnoredActor(CollisionCapsule.GetOwner());
+	CollisionQueryParam.AddIgnoredComponent(&CollisionCapsule);
 	FCollisionResponseParams CollisionResponseParam;
-
-	bool Hit= World->SweepSingleByChannel(OutHit, Start, End, Rot, ECollisionChannel::ECC_Pawn, CollisionShape, CollisionQueryParam, CollisionResponseParam);
-	
-
+	bool Hit =World->LineTraceSingleByChannel(OutHit, Start, End, ECC_Pawn, CollisionQueryParam, CollisionResponseParam);	
+	/*if (Hit)
+	{
+		if (OutHit.Actor!=NULL)print(OutHit.Actor->GetActorLabel());
+		if (OutHit.Component != NULL)print(OutHit.Component->GetOwner()->GetActorLabel());
+		DrawDebugLine(World, OutHit.TraceStart, OutHit.TraceEnd, FColor::Red, true);
+	}
+	else
+	{
+		DrawDebugLine(World, OutHit.TraceStart, OutHit.TraceEnd, FColor::Blue, true);
+	}*/
+		
 	return Hit;
 }
 
 void UGridTileComponent::GetUnobstructedNeighbours(const UCapsuleComponent & CollisionCapsule, TArray<UGridTileComponent*>& OutNeighbours)
 {
 	OutNeighbours.Empty();
-	for (UGridTileComponent *N : *GetNeighbours())
+	TArray<UGridTileComponent*> *TileNeighbours = GetNeighbours();	
+	for (UGridTileComponent *N : *TileNeighbours)
 	{
-		if (!N->Obstructed(GetComponentLocation(), CollisionCapsule))
+		if (!N->Obstructed(PawnLocation->GetComponentLocation(), CollisionCapsule))
 		{
 			OutNeighbours.Add(N);
-		}
+		}		
 	}
 }
 
+void UGridTileComponent::ResetPath()
+{
+	Backpointer = NULL;
+	Distance = std::numeric_limits<float>::infinity();
+	Visited = false;
+}
+
+FVector UGridTileComponent::GetPawnLocation()
+{
+	return PawnLocation->GetComponentLocation();
+}
+
+void UGridTileComponent::OnTileCursorOver(UPrimitiveComponent* TouchedComponent)
+{
+	if (Grid && !UnderCurrentPawn)
+	{
+		Grid->TileCursorOver(*this);
+	}	
+}

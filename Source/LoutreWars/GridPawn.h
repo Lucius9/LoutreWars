@@ -3,6 +3,9 @@
 #pragma once
 
 #include "GameFramework/Pawn.h"
+#include "PaperSpriteComponent.h"
+#include "Components/GridTileComponent.h"
+#include "Components/GridMovementComponent.h"
 #include "GridPawn.generated.h"
 
 UCLASS()
@@ -11,6 +14,16 @@ class LOUTREWARS_API AGridPawn : public APawn
 	GENERATED_BODY()
 
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Capsule")
+	UCapsuleComponent *Capsule;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MovementComponent")
+	UGridMovementComponent *MovementComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpriteComponent")
+	UPaperSpriteComponent *SpriteComponent;
+
 	// Sets default values for this pawn's properties
 	AGridPawn();
 
@@ -18,11 +31,13 @@ public:
 	virtual void BeginPlay() override;
 	
 	// Called every frame
-	virtual void Tick( float DeltaSeconds ) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
-
+	virtual void Tick( float DeltaSeconds ) override;	
 	
-	
+	UFUNCTION()
+	void OnActorClick(AActor *Actor,FKey Key);
+
+/*	UFUNCTION()
+	void OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey);
+
+	AActor* OnActorTouch(ETouchIndex::Type FingerIndex, AActor *Actor);*/
 };

@@ -1,8 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "LoutreWars.h"
+#include "NavGrid.h"
+#include "GridPawnPlayerController.h"
 #include "GridPawn.h"
 
+#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 // Sets default values
 AGridPawn::AGridPawn()
@@ -10,12 +13,50 @@ AGridPawn::AGridPawn()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	USceneComponent *Root = CreateDefaultSubobject<USceneComponent>("RootComponent");
+	RootComponent = Root;
+
+	Capsule = CreateDefaultSubobject<UCapsuleComponent>("Capsule");
+	Capsule->SetupAttachment(RootComponent);	
+	Capsule->SetCapsuleRadius(9.0f);
+	Capsule->SetCapsuleHalfHeight(9.0f);
+	Capsule->SetRelativeLocation(FVector(0, 10.0f, 0));
+	//Capsule->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	Capsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);		
+	
+	
+	SpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>("SpriteComponent");
+	SpriteComponent->SetupAttachment(RootComponent);
+
+	MovementComponent=CreateDefaultSubobject<UGridMovementComponent>("MovementComponent");	
+
+	OnClicked.AddUniqueDynamic(this, &AGridPawn::OnActorClick);
+	//OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouch);
+	
 }
 
 // Called when the game starts or when spawned
 void AGridPawn::BeginPlay()
 {
 	Super::BeginPlay();
+	ANavGrid* Grid = ANavGrid::GetNavGrid(GetWorld());
+	if (Grid!=NULL)
+	{
+		print(GetActorLocation().ToString());
+		UGridTileComponent *CurrentTile = Grid->GetTile(GetActorLocation());
+		if (CurrentTile != NULL)
+		{			
+			SetActorLocation(CurrentTile->GetPawnLocation());			
+		}
+		else
+		{
+			print("BeginPlay CurrentTile NULL");
+		}
+	}
+	else
+	{
+		print("Begin Play Grid NULL");
+	}
 	
 }
 
@@ -26,10 +67,49 @@ void AGridPawn::Tick( float DeltaTime )
 
 }
 
-// Called to bind functionality to input
-void AGridPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent)
-{
-	Super::SetupPlayerInputComponent(InputComponent);
-
+void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
+{	
+	print("here");
+	APlayerController *SomeController=UGameplayStatics::GetPlayerController(GetWorld(),0);
+	AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
+	if (GPPC && GPPC->GetPawn()!=this)
+	{
+		GPPC->Possess(this);
+	}
+	/*else if (GPCP &&  GPCP->GetPawn() == this)
+	{*/
+		TActorIterator<ANavGrid>Itr(GetWorld());
+		//print(FString::SanitizeFloat(GetActorLocation().X) + " " + FString::SanitizeFloat(GetActorLocation().Y) + " " + FString::SanitizeFloat(GetActorLocation().Z));
+		if (*Itr != NULL)
+		{
+			UGridTileComponent* CurrentTile = Itr->GetTile(GetActorLocation());
+			print(CurrentTile->GetOwner()->GetActorLabel());
+			if (CurrentTile)
+			{
+				CurrentTile->UnderCurrentPawn = true;
+				TArray<UGridTileComponent*> Out;
+				Itr->TilesInRange(CurrentTile, Out, this, true);					
+			}
+			else
+			{
+				print("CurrentTile NULL");
+			}
+		}
+		else
+		{
+			print("Itr null");
+		}
+	//}
 }
+
+/*void AGridPawn::OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey)
+{
+	print("lol");
+}*/
+
+/*AActor* AGridPawn::OnActorTouch(ETouchIndex::Type FingerIndex, AActor *Actor)
+{
+	print("here");
+	return NULL;
+}*/
 
