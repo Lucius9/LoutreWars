@@ -33,19 +33,24 @@ protected:
 public :
 	UGridTileComponent *GetTile(const FVector &Position);
 	virtual void TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests);
+	virtual void ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn);
 	
 	static ECollisionChannel ECC_Tile;
 
 public:
 	void TileCursorOver(UGridTileComponent &Tile);
+	void EndTileCursorOver(UGridTileComponent &Tile);
 
 /*Events Delegates*/
 public:
 	DECLARE_EVENT_OneParam(ANavGrid, FOnTileCursorOver, const UGridTileComponent&);
+	DECLARE_EVENT_OneParam(ANavGrid, FOnEndTileCursorOver, const UGridTileComponent&);
 
 	FOnTileCursorOver& OnTileCursorOver() { return OnTileCursorOverEvent; }
+	FOnEndTileCursorOver& OnEndTileCursorOver() { return OnEndTileCursorOverEvent ; }
 
 private:
 	FOnTileCursorOver OnTileCursorOverEvent;
+	FOnEndTileCursorOver OnEndTileCursorOverEvent;
 	
 };

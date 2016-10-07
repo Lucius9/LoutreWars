@@ -77,24 +77,24 @@ void AGridTile::PostEditChangeProperty(struct FPropertyChangedEvent& e)
 
 void AGridTile::EnableRangeOverlay()
 {
-	//OverlaySpriteComponent->SetVisibility(true, true);
+	OverlaySpriteComponent->SetVisibility(true, true);
 	OverlaySpriteComponent->SetHiddenInGame(false);	
 }
 
 void AGridTile::DisableRangeOverlay()
 {
-	//OverlaySpriteComponent->SetVisibility(false, true);
+	OverlaySpriteComponent->SetVisibility(false, true);
 	OverlaySpriteComponent->SetHiddenInGame(true);
 }
 
 void AGridTile::EnablePathOverlay()
 {
-	//PathOverlaySpriteComponent->SetVisibility(true, true);
+	PathOverlaySpriteComponent->SetVisibility(true, true);
 	PathOverlaySpriteComponent->SetHiddenInGame(false);
 }
 
 void AGridTile::DisablePathOverlay()
 {
-	//PathOverlaySpriteComponent->SetVisibility(false, true);
+	PathOverlaySpriteComponent->SetVisibility(false, true);
 	PathOverlaySpriteComponent->SetHiddenInGame(true);
 }

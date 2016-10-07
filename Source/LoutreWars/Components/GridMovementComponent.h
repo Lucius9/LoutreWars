@@ -33,4 +33,5 @@ public:
 
 	bool CreatePath(UGridTileComponent &Target);	
 	void ShowPath();
+	void HidePath();
 };

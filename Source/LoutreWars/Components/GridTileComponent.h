@@ -66,4 +66,7 @@ public :
 public : 
 	UFUNCTION()
 	void OnTileCursorOver(UPrimitiveComponent* TouchedComponent);
+
+	UFUNCTION()
+	void OnEndTileCursorOver(UPrimitiveComponent *TouchedComponent);
 };

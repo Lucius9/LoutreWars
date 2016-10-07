@@ -69,3 +69,19 @@ void UGridMovementComponent::ShowPath()
 		}		
 	}
 }
+
+void UGridMovementComponent::HidePath()
+{
+	if (CurrentPath.Num() != 0)
+	{
+		for (UGridTileComponent *T : CurrentPath)
+		{
+			AActor *Actor = T->GetOwner();
+			AGridTile *TileActor = Cast<AGridTile>(Actor);
+			if (IsValid(TileActor))
+			{
+				TileActor->DisablePathOverlay();
+			}
+		}
+	}
+}

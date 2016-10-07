@@ -23,6 +23,7 @@ void AGridPawnPlayerController::BeginPlay()
 	{
 		Grid = *Itr;
 		Grid->OnTileCursorOver().AddUObject(this, &AGridPawnPlayerController::OnTileCursorOver);
+		Grid->OnEndTileCursorOver().AddUObject(this, &AGridPawnPlayerController::OnEndTileCursorOver);
 	}
 
 }
@@ -38,5 +39,14 @@ void AGridPawnPlayerController::OnTileCursorOver(const UGridTileComponent &Tile)
 			print("here");
 			ControlledPawn->MovementComponent->ShowPath();
 		}
+	}
+}
+
+void AGridPawnPlayerController::OnEndTileCursorOver(const UGridTileComponent &Tile)
+{
+	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
+	if (IsValid(ControlledPawn))
+	{
+		ControlledPawn->MovementComponent->HidePath();
 	}
 }

@@ -23,4 +23,5 @@ public:
 	virtual void BeginPlay()override;
 	
 	void OnTileCursorOver(const UGridTileComponent &Tile);
+	void OnEndTileCursorOver(const UGridTileComponent &Tile);
 };

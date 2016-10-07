@@ -68,8 +68,7 @@ void AGridPawn::Tick( float DeltaTime )
 }
 
 void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
-{	
-	print("here");
+{		
 	APlayerController *SomeController=UGameplayStatics::GetPlayerController(GetWorld(),0);
 	AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
 	if (GPPC && GPPC->GetPawn()!=this)
@@ -88,7 +87,7 @@ void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 			{
 				CurrentTile->UnderCurrentPawn = true;
 				TArray<UGridTileComponent*> Out;
-				Itr->TilesInRange(CurrentTile, Out, this, true);					
+				Itr->ShowTilesInRange(CurrentTile, this);							
 			}
 			else
 			{

@@ -81,33 +81,32 @@ void ANavGrid::TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent
 	UGridTileComponent *Current = Tile;
 	Current->Distance = 0;
 
-	TArray<UGridTileComponent*> Neighbours;
-	Current->GetUnobstructedNeighbours(*Pawn->Capsule, Neighbours);
+	TArray<UGridTileComponent*> Neighbours=*Current->GetNeighbours();	
+	//Current->GetUnobstructedNeighbours(*Pawn->Capsule, Neighbours);
 
 	TArray<UGridTileComponent*> CheckList;
 	while(Current)
 	{		
-		Current->GetUnobstructedNeighbours(*Pawn->Capsule, Neighbours);		
+		Neighbours = *Current->GetNeighbours();
+		FVector CurrentPawnLocation = Current->PawnLocation->GetComponentLocation();
+		//Current->GetUnobstructedNeighbours(*Pawn->Capsule, Neighbours);		
 		for (UGridTileComponent *Neighbour : Neighbours)
-		{			
-			float Distance = Neighbour->Cost + Current->Distance;			
+		{	
+			FVector NeighbourPawnLocation = Neighbour->PawnLocation->GetComponentLocation();		
+			
+			float Distance = Neighbour->Cost + Current->Distance;
 			if (!Neighbour->Visited && Distance <= Pawn->MovementComponent->MovementRange)
 			{
 				Neighbour->Backpointer = Current;
 				Neighbour->Distance = Distance;
 				CheckList.AddUnique(Neighbour);
-			}				
+			}
+								
 		}
 		Current->Visited = true;
 		CheckList.Remove(Current);		
-		if (Current != Tile)
-		{	
-			AActor *Actor = Current->GetOwner();
-			AGridTile* T = Cast<AGridTile>(Actor);
-			if (T)
-			{
-				T->EnableRangeOverlay();
-			}
+		if (Current != Tile && !Current->Obstructed(CurrentPawnLocation,*Pawn->Capsule))
+		{			
 			OutArray.Add(Current);
 		}
 		if (CheckList.Num()>0)
@@ -117,6 +116,21 @@ void ANavGrid::TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent
 		else
 		{			
 			Current = NULL;
+		}
+	}
+}
+
+void ANavGrid::ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn)
+{
+	TArray<UGridTileComponent*>Range;
+	TilesInRange(Tile, Range, Pawn, true);
+	for (UGridTileComponent*T : Range)
+	{
+		AActor *Actor = T->GetOwner();
+		AGridTile *TileActor = Cast<AGridTile>(Actor);
+		if (IsValid(TileActor))
+		{
+			TileActor->EnableRangeOverlay();
 		}
 	}
 }
@@ -155,8 +169,12 @@ UGridTileComponent* ANavGrid::GetTile(const FVector &Position)
 }
 
 void ANavGrid::TileCursorOver(UGridTileComponent &Tile)
-{
-	print("Broadcast");
+{	
 	OnTileCursorOverEvent.Broadcast(Tile);
+}
+
+void ANavGrid::EndTileCursorOver(UGridTileComponent &Tile)
+{
+	OnEndTileCursorOverEvent.Broadcast(Tile);
 }
 

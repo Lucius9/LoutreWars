@@ -19,6 +19,7 @@ UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializ
 	Extent->SetCollisionResponseToChannel(ANavGrid::ECC_Tile, ECollisionResponse::ECR_Block);
 	Extent->SetHiddenInGame(false);
 	Extent->OnBeginCursorOver.AddDynamic(this, &UGridTileComponent::OnTileCursorOver);	
+	Extent->OnEndCursorOver.AddDynamic(this, &UGridTileComponent::OnEndTileCursorOver);
 
 
 	PawnLocation = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this,"PawnLocation");
@@ -163,7 +164,7 @@ bool UGridTileComponent::Obstructed(const FVector &FromPos, const FVector & To, 
 	{
 		DrawDebugLine(World, OutHit.TraceStart, OutHit.TraceEnd, FColor::Blue, true);
 	}*/
-		
+	
 	return Hit;
 }
 
@@ -198,4 +199,12 @@ void UGridTileComponent::OnTileCursorOver(UPrimitiveComponent* TouchedComponent)
 	{
 		Grid->TileCursorOver(*this);
 	}	
+}
+
+void UGridTileComponent::OnEndTileCursorOver(UPrimitiveComponent *TouchedComponent)
+{
+	if (Grid && !UnderCurrentPawn)
+	{
+		Grid->EndTileCursorOver(*this);
+	}
 }
