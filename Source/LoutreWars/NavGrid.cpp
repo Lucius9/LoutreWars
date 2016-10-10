@@ -178,3 +178,8 @@ void ANavGrid::EndTileCursorOver(UGridTileComponent &Tile)
 	OnEndTileCursorOverEvent.Broadcast(Tile);
 }
 
+void ANavGrid::TileClicked(UGridTileComponent &Tile)
+{
+	OnTileClickedEvent.Broadcast(Tile);
+}
+

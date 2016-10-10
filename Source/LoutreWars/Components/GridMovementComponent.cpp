@@ -4,9 +4,16 @@
 #include "NavGrid.h"
 #include "GridPawn.h"
 #include "Tiles/GridTile.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "GridMovementComponent.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+
+UGridMovementComponent::UGridMovementComponent(const FObjectInitializer &ObjectInitializer)
+	: Super(ObjectInitializer)
+{	
+	Spline = ObjectInitializer.CreateDefaultSubobject<USplineComponent>(this,"Path");
+}
 
 void UGridMovementComponent::BeginPlay()
 {	
@@ -16,6 +23,35 @@ void UGridMovementComponent::BeginPlay()
 		Grid = *Itr;
 	}
 }
+
+void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction * ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (Moving)
+	{		
+		float CurrentSpeed = MaxWalkingSpeed*DeltaTime;				
+		Distance = FMath::Min(Spline->GetSplineLength(), Distance + CurrentSpeed);
+		AActor *Owner = GetOwner();
+		FTransform OldTransform=Owner->GetActorTransform();
+
+		FTransform NewTransform = Spline->GetTransformAtDistanceAlongSpline(Distance, ESplineCoordinateSpace::Local);
+		FRotator DesiredRotation=NewTransform.Rotator();
+		//Owner->SetActorRotation(DesiredRotation);
+		Owner->SetActorTransform(NewTransform);
+		if (Distance >= Spline->GetSplineLength())
+		{			
+			Moving = false;
+			Distance = 0;
+			Velocity = FVector::ZeroVector;
+		}
+		else
+		{
+			Velocity = (NewTransform.GetLocation() - OldTransform.GetLocation())*(1 / DeltaTime);
+		}
+		UpdateComponentVelocity();
+	}
+}
+
 UGridTileComponent* UGridMovementComponent::GetCurrentTile()
 {
 	return CurrentTile;
@@ -29,6 +65,7 @@ void UGridMovementComponent::SetCurrentTile(UGridTileComponent *Tile)
 bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 {	
 	CurrentPath.Empty();
+	Spline->ClearSplinePoints();
 	AGridPawn *Pawn = Cast<AGridPawn>(GetOwner());
 	CurrentTile = Grid->GetTile(Pawn->GetActorLocation());	
 	if (CurrentTile != NULL )
@@ -43,7 +80,16 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 				CurrentPath.Add(Current);
 				Current = Current->Backpointer;
 			}		
-			Algo::Reverse(CurrentPath);			
+			Algo::Reverse(CurrentPath);		
+
+			Spline->AddSplinePoint(Pawn->GetActorLocation(), ESplineCoordinateSpace::Local);
+			Spline->SetSplinePointType(0, ESplinePointType::Linear);
+			for (int i = 1; i < CurrentPath.Num(); ++i)
+			{
+				CurrentPath[i]->AddSplinePoint(*Spline);
+				Spline->SetSplinePointType(i, ESplinePointType::Linear);
+				print(FString::FromInt(Spline->GetNumSplinePoints()));
+			}			
 			return true;
 		}
 	}
@@ -84,4 +130,24 @@ void UGridMovementComponent::HidePath()
 			}
 		}
 	}
+}
+
+bool UGridMovementComponent::MoveTo(UGridTileComponent &Target)
+{
+	if (CreatePath(Target))
+	{
+		FollowPath();
+		return true;
+	}
+	return false;
+}
+
+void UGridMovementComponent::FollowPath()
+{
+	Moving = true;
+}
+
+void UGridMovementComponent::StopMoving()
+{
+	Moving = false;
 }

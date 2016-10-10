@@ -20,6 +20,7 @@ UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializ
 	Extent->SetHiddenInGame(false);
 	Extent->OnBeginCursorOver.AddDynamic(this, &UGridTileComponent::OnTileCursorOver);	
 	Extent->OnEndCursorOver.AddDynamic(this, &UGridTileComponent::OnEndTileCursorOver);
+	Extent->OnClicked.AddDynamic(this, &UGridTileComponent::OnTileClicked);
 
 
 	PawnLocation = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this,"PawnLocation");
@@ -207,4 +208,18 @@ void UGridTileComponent::OnEndTileCursorOver(UPrimitiveComponent *TouchedCompone
 	{
 		Grid->EndTileCursorOver(*this);
 	}
+}
+
+void UGridTileComponent::OnTileClicked(UPrimitiveComponent* TouchedComponent, FKey Key)
+{
+	
+	if (Grid && !UnderCurrentPawn)
+	{
+		Grid->TileClicked(*this);
+	}
+}
+
+void UGridTileComponent::AddSplinePoint(USplineComponent &Out)
+{
+	Out.AddSplinePoint(PawnLocation->GetComponentLocation(), ESplineCoordinateSpace::Local);
 }

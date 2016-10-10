@@ -24,4 +24,5 @@ public:
 	
 	void OnTileCursorOver(const UGridTileComponent &Tile);
 	void OnEndTileCursorOver(const UGridTileComponent &Tile);
+	void OnTileClicked(const UGridTileComponent &Tile);
 };

@@ -40,17 +40,22 @@ public :
 public:
 	void TileCursorOver(UGridTileComponent &Tile);
 	void EndTileCursorOver(UGridTileComponent &Tile);
+	void TileClicked(UGridTileComponent &Tile);
 
 /*Events Delegates*/
 public:
 	DECLARE_EVENT_OneParam(ANavGrid, FOnTileCursorOver, const UGridTileComponent&);
 	DECLARE_EVENT_OneParam(ANavGrid, FOnEndTileCursorOver, const UGridTileComponent&);
+	DECLARE_EVENT_OneParam(ANavGrid, FOnTileClicked, const UGridTileComponent&);
 
 	FOnTileCursorOver& OnTileCursorOver() { return OnTileCursorOverEvent; }
 	FOnEndTileCursorOver& OnEndTileCursorOver() { return OnEndTileCursorOverEvent ; }
+	FOnTileClicked& OnTileClicked() { return OnTileClickedEvent; }
 
 private:
+	
 	FOnTileCursorOver OnTileCursorOverEvent;
 	FOnEndTileCursorOver OnEndTileCursorOverEvent;
+	FOnTileClicked OnTileClickedEvent;
 	
 };

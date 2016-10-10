@@ -5,6 +5,7 @@
 #include "Components/SceneComponent.h"
 #include "PaperSpriteComponent.h"
 #include "PaperFlipbookComponent.h"
+#include "Components/SplineComponent.h"
 #include "GridTileComponent.generated.h"
 
 
@@ -69,4 +70,10 @@ public :
 
 	UFUNCTION()
 	void OnEndTileCursorOver(UPrimitiveComponent *TouchedComponent);
+
+	UFUNCTION()
+	void OnTileClicked(UPrimitiveComponent* TouchedComponent, FKey Key);
+
+public :
+	void AddSplinePoint(USplineComponent &Out);
 };
