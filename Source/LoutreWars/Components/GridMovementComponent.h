@@ -41,6 +41,7 @@ public:
 
 	UGridTileComponent* GetCurrentTile();
 	void SetCurrentTile(UGridTileComponent *Tile);
+	bool IsMoving();
 
 	//Pathing
 public :
@@ -50,4 +51,8 @@ public :
 	bool MoveTo(UGridTileComponent &Target);
 	void FollowPath();
 	void StopMoving();
+
+protected :	
+	FRotator ComputeRotator(const FVector &PawnLocation, const FVector &Target);
+	FRotator LimitRotation(const FRotator &OldRotator, const FRotator &NewRotator, float DeltaSeconds);
 };

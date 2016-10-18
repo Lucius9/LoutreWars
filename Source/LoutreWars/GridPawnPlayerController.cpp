@@ -14,7 +14,7 @@ AGridPawnPlayerController::AGridPawnPlayerController()
 	bEnableTouchEvents = true;
 	bEnableMouseOverEvents = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-	DefaultClickTraceChannel = ECC_Visibility;
+	DefaultClickTraceChannel = ECC_Visibility;	
 }
 
 void AGridPawnPlayerController::BeginPlay()
@@ -33,7 +33,7 @@ void AGridPawnPlayerController::BeginPlay()
 void AGridPawnPlayerController::OnTileCursorOver(const UGridTileComponent &Tile)
 {
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
-	if (IsValid(ControlledPawn))
+	if (IsValid(ControlledPawn) && !ControlledPawn->IsMoving() && Mode==EControllerMode::Movement)
 	{
 		print("valid control pawn");
 		if (ControlledPawn->MovementComponent->CreatePath((UGridTileComponent &)Tile))
@@ -47,7 +47,7 @@ void AGridPawnPlayerController::OnTileCursorOver(const UGridTileComponent &Tile)
 void AGridPawnPlayerController::OnEndTileCursorOver(const UGridTileComponent &Tile)
 {
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
-	if (IsValid(ControlledPawn))
+	if (IsValid(ControlledPawn) && Mode == EControllerMode::Movement)
 	{
 		ControlledPawn->MovementComponent->HidePath();
 	}
@@ -59,22 +59,44 @@ void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 	if (IsValid(ControlledPawn))
 	{
 		UGridMovementComponent *MovementComponent=ControlledPawn->MovementComponent;
-		UGridTileComponent *Location = Grid->GetTile(ControlledPawn->GetActorLocation());
-		if (Grid && Location)
+		UGridTileComponent *Location = Grid->GetTile(ControlledPawn->GetActorLocation());		
+		if (Grid)
 		{
-			print("grille et tile valide");
-			TArray<UGridTileComponent *> InRange;
-			Grid->TilesInRange(Location, InRange, ControlledPawn,true);
-			if (InRange.Contains(&Tile))
+			Grid->HideTilesInRange();
+			if (Location)
 			{
-				print("je bouge");
-				MovementComponent->MoveTo((UGridTileComponent &)Tile);				
-				MovementComponent->HidePath();
-			}
+				print("grille et tile valide");				
+				TArray<UGridTileComponent *> InRange;
+				Grid->TilesInRange(Location, InRange, ControlledPawn, true);
+				if (InRange.Contains(&Tile))
+				{
+					print("je bouge");
+					Location->UnderCurrentPawn = false;
+					MovementComponent->MoveTo((UGridTileComponent &)Tile);
+					MovementComponent->HidePath();
+					EnableNavigationMode();
+				}
+			}			
 			else
 			{
 				print("tile not in range");
 			}
 		}
 	}
+}
+void AGridPawnPlayerController::EnableMovementMode()
+{
+	print("J'active le mode mouvement");
+	Mode = EControllerMode::Movement;
+}
+
+void AGridPawnPlayerController::EnableNavigationMode()
+{
+	print("Je retourne en mode navigation");
+	Mode = EControllerMode::Navigation;
+}
+
+void AGridPawnPlayerController::EnableAttackMode()
+{
+	Mode = EControllerMode::Attack;
 }

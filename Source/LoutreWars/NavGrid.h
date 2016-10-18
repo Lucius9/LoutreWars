@@ -5,12 +5,16 @@
 #include "GameFramework/Actor.h"
 #include "Components/GridTileComponent.h"
 #include "GridPawn.h"
+#include "Tiles/GridTile.h"
 #include "NavGrid.generated.h"
 
 UCLASS()
 class LOUTREWARS_API ANavGrid : public AActor
 {
 	GENERATED_BODY()
+
+protected:
+	TArray<AGridTile*>HighlightedTiles;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -34,7 +38,7 @@ public :
 	UGridTileComponent *GetTile(const FVector &Position);
 	virtual void TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests);
 	virtual void ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn);
-	
+	virtual void HideTilesInRange();
 	static ECollisionChannel ECC_Tile;
 
 public:

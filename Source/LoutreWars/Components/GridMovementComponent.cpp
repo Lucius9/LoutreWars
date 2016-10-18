@@ -12,8 +12,11 @@
 UGridMovementComponent::UGridMovementComponent(const FObjectInitializer &ObjectInitializer)
 	: Super(ObjectInitializer)
 {	
-	Spline = ObjectInitializer.CreateDefaultSubobject<USplineComponent>(this,"Path");
+	Spline = ObjectInitializer.CreateDefaultSubobject<USplineComponent>(this,"Path");		
+
+	bConstrainToPlane = true;
 }
+
 
 void UGridMovementComponent::BeginPlay()
 {	
@@ -31,13 +34,23 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 	{		
 		float CurrentSpeed = MaxWalkingSpeed*DeltaTime;				
 		Distance = FMath::Min(Spline->GetSplineLength(), Distance + CurrentSpeed);
-		AActor *Owner = GetOwner();
-		FTransform OldTransform=Owner->GetActorTransform();
+		AActor *Owner = GetOwner();		
+		FTransform OldTransform=Owner->GetActorTransform();				
+		FTransform NewTransform = Spline->GetTransformAtDistanceAlongSpline(Distance, ESplineCoordinateSpace::Local);		
 
-		FTransform NewTransform = Spline->GetTransformAtDistanceAlongSpline(Distance, ESplineCoordinateSpace::Local);
-		FRotator DesiredRotation=NewTransform.Rotator();
-		//Owner->SetActorRotation(DesiredRotation);
+		FRotator DesiredRotation=ComputeRotator(OldTransform.GetLocation(), NewTransform.GetLocation());
+		//print("Desired " + DesiredRotation.ToString());
+		//NewTransform.SetRotation(FQuat(FVector::UpVector, FMath::DegreesToRadians(180.0f)));		
+	/*	DesiredRotation.Pitch = DesiredRotation.Yaw == 180.0f ? DesiredRotation.Yaw : DesiredRotation.Pitch;
+		DesiredRotation.Pitch = DesiredRotation.Yaw == -180.0f ? DesiredRotation.Yaw : DesiredRotation.Pitch;
+		DesiredRotation.Yaw = 0;
+		DesiredRotation.Roll = 0;*/			
+		
+		FRotator NewRotation = LimitRotation(Owner->GetActorForwardVector().Rotation(), DesiredRotation, DeltaTime);		
+		NewTransform.SetRotation(FQuat(FVector::RightVector, FMath::DegreesToRadians(DesiredRotation.Pitch)));
+		//print("Final " + NewTransform.Rotator().ToString());
 		Owner->SetActorTransform(NewTransform);
+	
 		if (Distance >= Spline->GetSplineLength())
 		{			
 			Moving = false;
@@ -60,6 +73,11 @@ UGridTileComponent* UGridMovementComponent::GetCurrentTile()
 void UGridMovementComponent::SetCurrentTile(UGridTileComponent *Tile)
 {
 	CurrentTile = Tile;
+}
+
+bool UGridMovementComponent::IsMoving()
+{
+	return Moving;
 }
 
 bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
@@ -88,7 +106,7 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 			{
 				CurrentPath[i]->AddSplinePoint(*Spline);
 				Spline->SetSplinePointType(i, ESplinePointType::Linear);
-				print(FString::FromInt(Spline->GetNumSplinePoints()));
+				
 			}			
 			return true;
 		}
@@ -150,4 +168,43 @@ void UGridMovementComponent::FollowPath()
 void UGridMovementComponent::StopMoving()
 {
 	Moving = false;
+}
+
+FRotator UGridMovementComponent::LimitRotation(const FRotator &OldRotator, const FRotator &NewRotator, float DeltaSeconds)
+{	
+	FRotator Result = OldRotator;
+	FRotator DeltaRotator = NewRotator - OldRotator;
+	
+	DeltaRotator.Normalize();	
+
+	Result.Pitch += DeltaRotator.Pitch > 0 ? FMath::Min<float>(DeltaRotator.Pitch, MaxRotationSpeed * DeltaSeconds) :
+		FMath::Max<float>(DeltaRotator.Pitch, MaxRotationSpeed * -DeltaSeconds);	
+	
+	return Result;
+}
+
+FRotator UGridMovementComponent::ComputeRotator(const FVector &PawnLocation, const FVector &Target)
+{
+	FVector Delta = Target - PawnLocation;
+	FRotator Result = FRotator::ZeroRotator;
+
+	if (Delta.X > 0.0f)
+	{
+		Result.Pitch = 0.0f;
+	}
+	else if (Delta.X < 0.0f)
+	{
+		Result.Pitch = 180.0f;
+	}
+
+	if (Delta.Z > 0.0f)
+	{
+		Result.Pitch = -90.0f;
+	}
+	else if (Delta.Z < 0.0f)
+	{
+		Result.Pitch = 90.0f;
+	}
+
+	return Result;
 }

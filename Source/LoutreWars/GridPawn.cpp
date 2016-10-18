@@ -30,6 +30,11 @@ AGridPawn::AGridPawn()
 
 	MovementComponent=CreateDefaultSubobject<UGridMovementComponent>("MovementComponent");	
 
+	Arrow = CreateDefaultSubobject<UArrowComponent>("Arrow");
+	Arrow->SetupAttachment(RootComponent);
+	Arrow->ArrowSize = 0.1f;
+	Arrow->SetHiddenInGame(false,true);
+
 	OnClicked.AddUniqueDynamic(this, &AGridPawn::OnActorClick);
 	//OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouch);
 	
@@ -69,25 +74,26 @@ void AGridPawn::Tick( float DeltaTime )
 
 void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 {		
-	APlayerController *SomeController=UGameplayStatics::GetPlayerController(GetWorld(),0);
-	AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
-	if (GPPC && GPPC->GetPawn()!=this)
+	if (!MovementComponent->IsMoving())
 	{
-		GPPC->Possess(this);
-	}
-	/*else if (GPCP &&  GPCP->GetPawn() == this)
-	{*/
+		APlayerController *SomeController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
+		if (GPPC && GPPC->GetPawn() != this)
+		{
+			GPPC->Possess(this);
+			GPPC->EnableMovementMode();
+		}
 		TActorIterator<ANavGrid>Itr(GetWorld());
-		//print(FString::SanitizeFloat(GetActorLocation().X) + " " + FString::SanitizeFloat(GetActorLocation().Y) + " " + FString::SanitizeFloat(GetActorLocation().Z));
 		if (*Itr != NULL)
 		{
+			Itr->HideTilesInRange();
 			UGridTileComponent* CurrentTile = Itr->GetTile(GetActorLocation());
 			print(CurrentTile->GetOwner()->GetActorLabel());
 			if (CurrentTile)
 			{
 				CurrentTile->UnderCurrentPawn = true;
 				TArray<UGridTileComponent*> Out;
-				Itr->ShowTilesInRange(CurrentTile, this);							
+				Itr->ShowTilesInRange(CurrentTile, this);
 			}
 			else
 			{
@@ -98,7 +104,12 @@ void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 		{
 			print("Itr null");
 		}
-	//}
+	}	
+}
+
+bool AGridPawn::IsMoving()
+{
+	return MovementComponent->IsMoving();
 }
 
 /*void AGridPawn::OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey)

@@ -9,6 +9,14 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class EControllerMode : uint8
+{
+	Navigation			UMETA(DisplayName = "Navigation"),
+	Movement			UMETA(DisplayName = "Movement"),
+	Attack				UMETA(DisplayName = "Attack"),	
+};
+
 UCLASS()
 class LOUTREWARS_API AGridPawnPlayerController : public APlayerController
 {
@@ -16,6 +24,7 @@ class LOUTREWARS_API AGridPawnPlayerController : public APlayerController
 
 protected :
 	ANavGrid *Grid;
+	EControllerMode Mode=EControllerMode::Navigation;
 
 public:
 	AGridPawnPlayerController();
@@ -25,4 +34,10 @@ public:
 	void OnTileCursorOver(const UGridTileComponent &Tile);
 	void OnEndTileCursorOver(const UGridTileComponent &Tile);
 	void OnTileClicked(const UGridTileComponent &Tile);
+	
+public :
+	void EnableMovementMode();
+	void EnableNavigationMode();
+	void EnableAttackMode();
+
 };

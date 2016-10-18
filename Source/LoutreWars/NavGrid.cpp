@@ -122,6 +122,7 @@ void ANavGrid::TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent
 
 void ANavGrid::ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn)
 {
+	HighlightedTiles.Empty();
 	TArray<UGridTileComponent*>Range;
 	TilesInRange(Tile, Range, Pawn, true);
 	for (UGridTileComponent*T : Range)
@@ -131,7 +132,16 @@ void ANavGrid::ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn)
 		if (IsValid(TileActor))
 		{
 			TileActor->EnableRangeOverlay();
+			HighlightedTiles.Add(TileActor);
 		}
+	}
+}
+
+void ANavGrid::HideTilesInRange()
+{
+	for (AGridTile *T : HighlightedTiles)
+	{
+		T->DisableRangeOverlay();
 	}
 }
 

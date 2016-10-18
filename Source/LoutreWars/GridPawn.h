@@ -24,6 +24,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpriteComponent")
 	UPaperSpriteComponent *SpriteComponent;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Component")
+	UArrowComponent *Arrow;
+
 	// Sets default values for this pawn's properties
 	AGridPawn();
 
@@ -32,6 +35,8 @@ public:
 	
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;	
+
+	bool IsMoving(); 
 	
 	UFUNCTION()
 	void OnActorClick(AActor *Actor,FKey Key);
