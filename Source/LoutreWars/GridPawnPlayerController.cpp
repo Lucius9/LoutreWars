@@ -34,11 +34,9 @@ void AGridPawnPlayerController::OnTileCursorOver(const UGridTileComponent &Tile)
 {
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
 	if (IsValid(ControlledPawn) && !ControlledPawn->IsMoving() && Mode==EControllerMode::Movement)
-	{
-		print("valid control pawn");
+	{	
 		if (ControlledPawn->MovementComponent->CreatePath((UGridTileComponent &)Tile))
-		{
-			print("here");
+		{			
 			ControlledPawn->MovementComponent->ShowPath();
 		}
 	}
@@ -64,35 +62,28 @@ void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 		{
 			Grid->HideTilesInRange();
 			if (Location)
-			{
-				print("grille et tile valide");				
+			{					
 				TArray<UGridTileComponent *> InRange;
 				Grid->TilesInRange(Location, InRange, ControlledPawn, true);
 				if (InRange.Contains(&Tile))
-				{
-					print("je bouge");
+				{				
 					Location->UnderCurrentPawn = false;
 					MovementComponent->MoveTo((UGridTileComponent &)Tile);
 					MovementComponent->HidePath();
+					UnPossess();
 					EnableNavigationMode();
 				}
 			}			
-			else
-			{
-				print("tile not in range");
-			}
 		}
 	}
 }
 void AGridPawnPlayerController::EnableMovementMode()
 {
-	print("J'active le mode mouvement");
 	Mode = EControllerMode::Movement;
 }
 
 void AGridPawnPlayerController::EnableNavigationMode()
-{
-	print("Je retourne en mode navigation");
+{	
 	Mode = EControllerMode::Navigation;
 }
 

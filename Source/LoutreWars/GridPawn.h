@@ -27,6 +27,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Component")
 	UArrowComponent *Arrow;
 
+
 	// Sets default values for this pawn's properties
 	AGridPawn();
 

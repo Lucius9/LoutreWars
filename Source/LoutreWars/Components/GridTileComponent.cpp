@@ -220,6 +220,6 @@ void UGridTileComponent::OnTileClicked(UPrimitiveComponent* TouchedComponent, FK
 }
 
 void UGridTileComponent::AddSplinePoint(USplineComponent &Out)
-{
+{	
 	Out.AddSplinePoint(PawnLocation->GetComponentLocation(), ESplineCoordinateSpace::Local);
 }

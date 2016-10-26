@@ -22,11 +22,27 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Movement") float MaxRotationSpeed = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement") float MaxWalkAngle = 90.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement") bool bUseRootMotion = true;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visualization")
 	USplineComponent *Spline;
 
+	/** Desired pitch rotation after current movement is complete */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float TargetPitch;
+
+	/** The current pitch rotation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float CurrentPitch;		
+
+public :
+	static float FaceUp;
+	static float FaceDown;
+	static float FaceLeft;
+	static float FaceRight;
+
 protected:
+
+	
 	UGridTileComponent *CurrentTile;
 	TArray<UGridTileComponent *>CurrentPath;
 	class ANavGrid *Grid;
@@ -53,6 +69,7 @@ public :
 	void StopMoving();
 
 protected :	
-	FRotator ComputeRotator(const FVector &PawnLocation, const FVector &Target);
-	FRotator LimitRotation(const FRotator &OldRotator, const FRotator &NewRotator, float DeltaSeconds);
+	float ComputeTargetPitch(const FVector &PawnLocation, const FVector &Target);
+	float ComputeDeltaPitch(const float &OldPitch, const float &NewPitch);
+	float LimitRotation(const float &OldPitch, const float &NewPitch, float DeltaSeconds);
 };

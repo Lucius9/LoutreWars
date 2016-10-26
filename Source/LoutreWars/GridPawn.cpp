@@ -36,8 +36,7 @@ AGridPawn::AGridPawn()
 	Arrow->SetHiddenInGame(false,true);
 
 	OnClicked.AddUniqueDynamic(this, &AGridPawn::OnActorClick);
-	//OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouch);
-	
+	//OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouch);	
 }
 
 // Called when the game starts or when spawned

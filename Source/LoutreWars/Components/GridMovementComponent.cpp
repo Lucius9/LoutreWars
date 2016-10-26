@@ -9,12 +9,18 @@
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
+float UGridMovementComponent::FaceRight = 0.0;
+float UGridMovementComponent::FaceLeft = 180.0f;
+float UGridMovementComponent::FaceUp = -90.0f;
+float UGridMovementComponent::FaceDown = 90.0f;
+
 UGridMovementComponent::UGridMovementComponent(const FObjectInitializer &ObjectInitializer)
 	: Super(ObjectInitializer)
 {	
-	Spline = ObjectInitializer.CreateDefaultSubobject<USplineComponent>(this,"Path");		
+	Spline = ObjectInitializer.CreateDefaultSubobject<USplineComponent>(this, "SplineComponent");
 
-	bConstrainToPlane = true;
+	CurrentPitch = FaceRight;
+	TargetPitch = FaceRight;
 }
 
 
@@ -33,23 +39,19 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 	if (Moving)
 	{		
 		float CurrentSpeed = MaxWalkingSpeed*DeltaTime;				
-		Distance = FMath::Min(Spline->GetSplineLength(), Distance + CurrentSpeed);
-		AActor *Owner = GetOwner();		
-		FTransform OldTransform=Owner->GetActorTransform();				
-		FTransform NewTransform = Spline->GetTransformAtDistanceAlongSpline(Distance, ESplineCoordinateSpace::Local);		
+		Distance = FMath::Min(Spline->GetSplineLength(), Distance + CurrentSpeed);	
 
-		FRotator DesiredRotation=ComputeRotator(OldTransform.GetLocation(), NewTransform.GetLocation());
-		//print("Desired " + DesiredRotation.ToString());
-		//NewTransform.SetRotation(FQuat(FVector::UpVector, FMath::DegreesToRadians(180.0f)));		
-	/*	DesiredRotation.Pitch = DesiredRotation.Yaw == 180.0f ? DesiredRotation.Yaw : DesiredRotation.Pitch;
-		DesiredRotation.Pitch = DesiredRotation.Yaw == -180.0f ? DesiredRotation.Yaw : DesiredRotation.Pitch;
-		DesiredRotation.Yaw = 0;
-		DesiredRotation.Roll = 0;*/			
-		
-		FRotator NewRotation = LimitRotation(Owner->GetActorForwardVector().Rotation(), DesiredRotation, DeltaTime);		
-		NewTransform.SetRotation(FQuat(FVector::RightVector, FMath::DegreesToRadians(DesiredRotation.Pitch)));
-		//print("Final " + NewTransform.Rotator().ToString());
-		Owner->SetActorTransform(NewTransform);
+		AActor *Owner = GetOwner();
+		FVector OldLocation = Owner->GetActorLocation();			
+		FTransform NewTransform = Spline->GetTransformAtDistanceAlongSpline(Distance, ESplineCoordinateSpace::Local);		
+		FVector NewLocation = NewTransform.GetLocation();			
+
+		TargetPitch = ComputeTargetPitch(OldLocation,NewLocation);		
+		CurrentPitch = LimitRotation(CurrentPitch, TargetPitch, DeltaTime);
+
+		FQuat CurrentQuat = FQuat(FVector::RightVector, FMath::DegreesToRadians(CurrentPitch));		
+
+		Owner->SetActorLocationAndRotation(NewLocation, CurrentQuat);
 	
 		if (Distance >= Spline->GetSplineLength())
 		{			
@@ -58,8 +60,8 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 			Velocity = FVector::ZeroVector;
 		}
 		else
-		{
-			Velocity = (NewTransform.GetLocation() - OldTransform.GetLocation())*(1 / DeltaTime);
+		{			
+			Velocity = (NewLocation - OldLocation)*(1 / DeltaTime);
 		}
 		UpdateComponentVelocity();
 	}
@@ -83,7 +85,7 @@ bool UGridMovementComponent::IsMoving()
 bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 {	
 	CurrentPath.Empty();
-	Spline->ClearSplinePoints();
+	Spline->ClearSplinePoints(true);		
 	AGridPawn *Pawn = Cast<AGridPawn>(GetOwner());
 	CurrentTile = Grid->GetTile(Pawn->GetActorLocation());	
 	if (CurrentTile != NULL )
@@ -100,22 +102,19 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 			}		
 			Algo::Reverse(CurrentPath);		
 
+			print("Actor Location " + Pawn->GetActorLocation().ToString());
 			Spline->AddSplinePoint(Pawn->GetActorLocation(), ESplineCoordinateSpace::Local);
 			Spline->SetSplinePointType(0, ESplinePointType::Linear);
 			for (int i = 1; i < CurrentPath.Num(); ++i)
 			{
-				CurrentPath[i]->AddSplinePoint(*Spline);
+			
+				CurrentPath[i]->AddSplinePoint(*Spline);				
 				Spline->SetSplinePointType(i, ESplinePointType::Linear);
 				
-			}			
+			}				
 			return true;
 		}
-	}
-	else
-	{
-		print("Create Path CurrentTile NULL");
-	}
-	print("false");
+	}		
 	return false;
 }
 
@@ -170,41 +169,56 @@ void UGridMovementComponent::StopMoving()
 	Moving = false;
 }
 
-FRotator UGridMovementComponent::LimitRotation(const FRotator &OldRotator, const FRotator &NewRotator, float DeltaSeconds)
-{	
-	FRotator Result = OldRotator;
-	FRotator DeltaRotator = NewRotator - OldRotator;
-	
-	DeltaRotator.Normalize();	
+float UGridMovementComponent::LimitRotation(const float &OldPitch, const float &NewPitch, float DeltaSeconds)
+{		
+	if (FMath::IsNearlyEqual(OldPitch, NewPitch))
+	{		
+		return NewPitch;
+	}
 
-	Result.Pitch += DeltaRotator.Pitch > 0 ? FMath::Min<float>(DeltaRotator.Pitch, MaxRotationSpeed * DeltaSeconds) :
-		FMath::Max<float>(DeltaRotator.Pitch, MaxRotationSpeed * -DeltaSeconds);	
+	float DeltaDegrees = ComputeDeltaPitch(OldPitch, NewPitch);
+
+	DeltaDegrees = FMath::Clamp(DeltaDegrees, MaxRotationSpeed * -DeltaSeconds, MaxRotationSpeed * DeltaSeconds);	
 	
-	return Result;
+	return OldPitch+DeltaDegrees;	
 }
 
-FRotator UGridMovementComponent::ComputeRotator(const FVector &PawnLocation, const FVector &Target)
+float UGridMovementComponent::ComputeDeltaPitch(const float &OldPitch, const float &NewPitch)
 {
-	FVector Delta = Target - PawnLocation;
-	FRotator Result = FRotator::ZeroRotator;
+	float DeltaPitch = NewPitch - OldPitch;
+	if (FMath::Abs(DeltaPitch) <= 180.0f)
+	{
+		return DeltaPitch;
+	}
+	else
+	{
+		if (DeltaPitch > 0)
+		{			
+			DeltaPitch -= 360;			
+		}
+		else
+		{			
+			DeltaPitch += 360;
+		}
+		return DeltaPitch;
+	}
+}
 
-	if (Delta.X > 0.0f)
-	{
-		Result.Pitch = 0.0f;
-	}
-	else if (Delta.X < 0.0f)
-	{
-		Result.Pitch = 180.0f;
-	}
+float UGridMovementComponent::ComputeTargetPitch(const FVector &PawnLocation, const FVector &Target)
+{
+	FVector Delta = Target-PawnLocation;	
 
 	if (Delta.Z > 0.0f)
-	{
-		Result.Pitch = -90.0f;
+	{			
+		return FaceUp;
 	}
-	else if (Delta.Z < 0.0f)
-	{
-		Result.Pitch = 90.0f;
+	if (Delta.Z < 0.0f)
+	{				
+		return FaceDown;
 	}
-
-	return Result;
+	if (Delta.X < 0.0f)
+	{
+		return FaceLeft;
+	}
+	return FaceRight;
 }
