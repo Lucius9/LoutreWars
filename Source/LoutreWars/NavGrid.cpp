@@ -145,6 +145,11 @@ void ANavGrid::HideTilesInRange()
 	}
 }
 
+void ANavGrid::GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out)
+{
+
+}
+
 UGridTileComponent * ANavGrid::LineTraceTile(const FVector &Start, const FVector &End)
 {
 	FHitResult HitResult;

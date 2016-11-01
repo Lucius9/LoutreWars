@@ -27,6 +27,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Component")
 	UArrowComponent *Arrow;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ControlledBy")
+	bool ControlledByAI;
+		
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ControlledBy")
+	int PlayerIndex;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	int AttackRangeMin;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	int AttackRangeMax;
+
+
+
 
 	// Sets default values for this pawn's properties
 	AGridPawn();
@@ -41,6 +55,8 @@ public:
 	
 	UFUNCTION()
 	void OnActorClick(AActor *Actor,FKey Key);
+
+	virtual bool IsAttackableBy(AGridPawn *Attacker);
 
 /*	UFUNCTION()
 	void OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey);

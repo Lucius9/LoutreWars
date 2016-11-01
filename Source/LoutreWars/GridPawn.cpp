@@ -3,6 +3,7 @@
 #include "LoutreWars.h"
 #include "NavGrid.h"
 #include "GridPawnPlayerController.h"
+#include "GridPlayerState.h"
 #include "GridPawn.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
@@ -109,6 +110,30 @@ void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 bool AGridPawn::IsMoving()
 {
 	return MovementComponent->IsMoving();
+}
+
+bool AGridPawn::IsAttackableBy(AGridPawn *Attacker) 
+{
+	if (Attacker->ControlledByAI == ControlledByAI && Attacker->PlayerIndex == PlayerIndex)
+	{
+		return false;
+	}
+	AGridPlayerState *MyState = Cast<AGridPlayerState>(PlayerState);
+	AGridPlayerState *AttackerState = Cast<AGridPlayerState>(Attacker->PlayerState);
+	if (MyState && AttackerState)
+	{
+		if (MyState->TeamIndex == AttackerState->TeamIndex)
+		{
+			return false;
+		}
+		return true;
+	}
+	else
+	{
+		print("cast failed");
+		return false;
+	}
+	
 }
 
 /*void AGridPawn::OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey)
