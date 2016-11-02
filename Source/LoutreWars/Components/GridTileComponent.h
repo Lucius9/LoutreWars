@@ -62,7 +62,7 @@ public :
 	/* Return the neighbours that are not Obstructed() */
 	virtual void GetUnobstructedNeighbours(const UCapsuleComponent &CollisionCapsule, TArray<UGridTileComponent *> &OutNeighbours);	
 	/* Reset variables used in pathfinding */
-	virtual void ResetPath();
+	virtual void ResetPath();	
 
 public : 
 	UFUNCTION()
