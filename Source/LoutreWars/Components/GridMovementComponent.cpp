@@ -58,6 +58,13 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 			Moving = false;
 			Distance = 0;
 			Velocity = FVector::ZeroVector;
+			//attack auto
+			AGridPawn *Pawn = Cast<AGridPawn>(Owner);
+			if (Pawn)
+			{
+				//Pawn->Attack
+			}
+
 		}
 		else
 		{			

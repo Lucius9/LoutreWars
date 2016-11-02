@@ -40,6 +40,7 @@ public :
 	virtual void ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn);
 	virtual void HideTilesInRange();
 	static ECollisionChannel ECC_Tile;
+	virtual void GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out);
 
 public:
 	void TileCursorOver(UGridTileComponent &Tile);
