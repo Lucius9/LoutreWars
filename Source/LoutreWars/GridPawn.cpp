@@ -136,6 +136,18 @@ bool AGridPawn::IsAttackableBy(AGridPawn *Attacker)
 	
 }
 
+void AGridPawn::Attack(AGridPawn *Attacker, bool attackable)
+{
+	int tmp;
+	if (attackable)
+	{
+		tmp = (Attacker->Atc * Attacker->Unit) - (Def * Unit);
+		PV = PV - tmp;
+		if (PV)
+			Unit = PV / UnitPv;
+	}
+}
+
 /*void AGridPawn::OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey)
 {
 	print("lol");

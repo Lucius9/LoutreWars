@@ -62,7 +62,7 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 			AGridPawn *Pawn = Cast<AGridPawn>(Owner);
 			if (Pawn)
 			{
-				//Pawn->Attack
+				Pawn->Attack(Owner, Pawn->IsAttackableBy(Owner));
 			}
 
 		}

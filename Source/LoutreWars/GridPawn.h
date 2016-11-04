@@ -39,8 +39,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	int AttackRangeMax;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int PV;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int Unit;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int UnitPv;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int Atc;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int AtcSpe;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int Def;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	int DefSpe;
 
 	// Sets default values for this pawn's properties
 	AGridPawn();
@@ -57,6 +75,8 @@ public:
 	void OnActorClick(AActor *Actor,FKey Key);
 
 	virtual bool IsAttackableBy(AGridPawn *Attacker);
+
+	virtual void Attack(AGridPawn *Attacker, bool Attackable);
 
 /*	UFUNCTION()
 	void OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey);
