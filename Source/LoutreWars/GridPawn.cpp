@@ -118,7 +118,7 @@ bool AGridPawn::IsMoving()
 bool AGridPawn::IsAttackableBy(AGridPawn *Attacker) 
 {
 	if (Attacker->ControlledByAI == ControlledByAI && Attacker->PlayerIndex == PlayerIndex)
-	{
+	{		
 		return false;
 	}
 	AGridPlayerState *MyState = Cast<AGridPlayerState>(PlayerState);
@@ -130,8 +130,10 @@ bool AGridPawn::IsAttackableBy(AGridPawn *Attacker)
 		
 		if (MyState->TeamIndex == AttackerState->TeamIndex)
 		{
+			
 			return false;
 		}
+		print("return true");
 		return true;		
 	}
 	else
@@ -142,15 +144,17 @@ bool AGridPawn::IsAttackableBy(AGridPawn *Attacker)
 	
 }
 
-void AGridPawn::Attack(AGridPawn *Attacker, bool attackable)
+void AGridPawn::Attack(AGridPawn *Defenser, bool attackable)
 {
 	int tmp;
 	if (attackable)
 	{
-		tmp = (Attacker->Atc * Attacker->Unit) - (Def * Unit);
+		tmp = (Atc * Unit) - (Defenser->Def * Defenser->Unit);
 		PV = PV - tmp;
-		if (PV)
+		if (PV) {
+			print("tmp "+FString::FromInt(tmp));
 			Unit = PV / UnitPv;
+		}
 	}
 }
 

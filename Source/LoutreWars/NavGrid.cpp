@@ -189,19 +189,20 @@ AGridPawn * ANavGrid::LineTracePawn(const FVector &Start,const FVector &End)
 }
 
 void ANavGrid::GetEnnemiesInNeighborhood(AGridPawn *Pawn, TArray<AGridPawn*> &Out, UGridTileComponent *Tile, int depth)
-{
+{	
 	if (depth >= Pawn->AttackRangeMin && depth <= Pawn->AttackRangeMax)
 	{
 		AGridPawn *Target =GetPawn(Tile);
-		if (Target != NULL && Target->IsAttackableBy(Pawn))
+		if (Target  && Target->IsAttackableBy(Pawn) && !Out.Contains(Target))
 		{
 			Out.Add(Target);
 		}
 		TArray<UGridTileComponent*> *TileNeighbours = Tile->GetNeighbours();
 		for (UGridTileComponent *Neighbor : *TileNeighbours)
 		{
-			GetEnnemiesInNeighborhood(Pawn, Out,Neighbor, depth + 1);
+			GetEnnemiesInNeighborhood(Pawn, Out,Neighbor, depth+1 );
 		}
+		
 	}
 	return;
 }
@@ -209,7 +210,11 @@ void ANavGrid::GetEnnemiesInNeighborhood(AGridPawn *Pawn, TArray<AGridPawn*> &Ou
 void ANavGrid::GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out)
 {
 	UGridTileComponent *Tile = GetTile(Pawn->GetActorLocation());
-	GetEnnemiesInNeighborhood(Pawn, Out, Tile, 0);
+	if (Tile)
+	{
+		GetEnnemiesInNeighborhood(Pawn, Out, Tile, 0);
+	}
+	
 }
 
 UGridTileComponent* ANavGrid::GetTile(const FVector &Position)
