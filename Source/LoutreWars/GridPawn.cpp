@@ -78,10 +78,13 @@ void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 	{
 		APlayerController *SomeController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
-		if (GPPC && GPPC->GetPawn() != this)
+		if (GPPC->GetPawn() != this)
 		{
 			GPPC->Possess(this);
-			GPPC->EnableMovementMode();
+		}
+		if (GPPC)
+		{
+			GPPC->EnableMovementMode();			
 		}
 		TActorIterator<ANavGrid>Itr(GetWorld());
 		if (*Itr != NULL)
@@ -120,13 +123,16 @@ bool AGridPawn::IsAttackableBy(AGridPawn *Attacker)
 	}
 	AGridPlayerState *MyState = Cast<AGridPlayerState>(PlayerState);
 	AGridPlayerState *AttackerState = Cast<AGridPlayerState>(Attacker->PlayerState);
+	print("Attacker : " + Attacker->GetActorLabel());
+	print("Target : " + GetActorLabel());
 	if (MyState && AttackerState)
 	{
+		
 		if (MyState->TeamIndex == AttackerState->TeamIndex)
 		{
 			return false;
 		}
-		return true;
+		return true;		
 	}
 	else
 	{

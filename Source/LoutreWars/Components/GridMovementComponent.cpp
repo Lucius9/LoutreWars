@@ -61,10 +61,16 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 			//attack auto
 			AGridPawn *Pawn = Cast<AGridPawn>(Owner);
 			if (Pawn)
+<<<<<<< HEAD
 			{
 				Pawn->Attack(Owner, Pawn->IsAttackableBy(Owner));
+=======
+			{				
+				TArray<AGridPawn *> EnnemiesInRange;
+				Grid->GetEnnemiesInRange(Pawn, EnnemiesInRange);
+				print("Ennemies : " + FString::FromInt(EnnemiesInRange.Num()));
+>>>>>>> ee30ffad1ca293d9b30f11a9cd303d3896000457
 			}
-
 		}
 		else
 		{			
