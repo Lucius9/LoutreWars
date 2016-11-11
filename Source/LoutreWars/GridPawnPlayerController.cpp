@@ -60,11 +60,11 @@ void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 		UGridTileComponent *Location = Grid->GetTile(ControlledPawn->GetActorLocation());		
 		if (Grid)
 		{
-			Grid->HideTilesInRange();
+			Grid->HideMovementRange();
 			if (Location)
 			{					
 				TArray<UGridTileComponent *> InRange;
-				Grid->TilesInRange(Location, InRange, ControlledPawn, true);
+				Grid->TilesInMovementRange(Location, InRange, ControlledPawn, true);
 				if (InRange.Contains(&Tile))
 				{				
 					Location->UnderCurrentPawn = false;

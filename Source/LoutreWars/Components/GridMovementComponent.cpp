@@ -103,7 +103,7 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 	if (CurrentTile != NULL )
 	{
 		TArray<UGridTileComponent*> Range;
-		Grid->TilesInRange(CurrentTile, Range, Pawn, true);		
+		Grid->TilesInMovementRange(CurrentTile, Range, Pawn, true);		
 		if (Range.Contains(&Target))
 		{			
 			UGridTileComponent *Current = &Target;
