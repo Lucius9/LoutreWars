@@ -150,10 +150,13 @@ void AGridPawn::Attack(AGridPawn *Defenser, bool attackable)
 	if (attackable)
 	{
 		tmp = (Atc * Unit) - (Defenser->Def * Defenser->Unit);
-		PV = PV - tmp;
-		if (PV) {
-			print("tmp "+FString::FromInt(tmp));
-			Unit = PV / UnitPv;
+		Defenser->PV = Defenser->PV - tmp;
+		if (Defenser->PV) {
+			Defenser->Unit = Defenser->PV / Defenser->UnitPv;
+			tmp = (Defenser->Atc * Defenser->Unit) - (Def * Unit);
+			PV = PV - tmp;
+				if (PV)
+					Unit = PV / UnitPv;
 		}
 	}
 }
