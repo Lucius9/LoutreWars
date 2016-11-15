@@ -3,6 +3,7 @@
 #include "LoutreWars.h"
 #include "NavGrid.h"
 #include "GridPawnPlayerController.h"
+#include "GridPlayerState.h"
 #include "GridPawn.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
@@ -77,22 +78,25 @@ void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 	{
 		APlayerController *SomeController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
-		if (GPPC && GPPC->GetPawn() != this)
+		if (GPPC->GetPawn() != this)
 		{
 			GPPC->Possess(this);
-			GPPC->EnableMovementMode();
+		}
+		if (GPPC)
+		{
+			GPPC->EnableMovementMode();			
 		}
 		TActorIterator<ANavGrid>Itr(GetWorld());
 		if (*Itr != NULL)
 		{
-			Itr->HideTilesInRange();
+			Itr->HideMovementRange();
 			UGridTileComponent* CurrentTile = Itr->GetTile(GetActorLocation());
 			print(CurrentTile->GetOwner()->GetActorLabel());
 			if (CurrentTile)
 			{
 				CurrentTile->UnderCurrentPawn = true;
 				TArray<UGridTileComponent*> Out;
-				Itr->ShowTilesInRange(CurrentTile, this);
+				Itr->ShowMovementRange(CurrentTile, this);
 			}
 			else
 			{
@@ -109,6 +113,52 @@ void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 bool AGridPawn::IsMoving()
 {
 	return MovementComponent->IsMoving();
+}
+
+bool AGridPawn::IsAttackableBy(AGridPawn *Attacker) 
+{
+	if (Attacker->ControlledByAI == ControlledByAI && Attacker->PlayerIndex == PlayerIndex)
+	{		
+		return false;
+	}
+	AGridPlayerState *MyState = Cast<AGridPlayerState>(PlayerState);
+	AGridPlayerState *AttackerState = Cast<AGridPlayerState>(Attacker->PlayerState);
+	print("Attacker : " + Attacker->GetActorLabel());
+	print("Target : " + GetActorLabel());
+	if (MyState && AttackerState)
+	{
+		
+		if (MyState->TeamIndex == AttackerState->TeamIndex)
+		{
+			
+			return false;
+		}
+		print("return true");
+		return true;		
+	}
+	else
+	{
+		print("cast failed");
+		return false;
+	}
+	
+}
+
+void AGridPawn::Attack(AGridPawn *Defenser, bool attackable)
+{
+	int tmp;
+	if (attackable)
+	{
+		tmp = (Atc * Unit) - (Defenser->Def * Defenser->Unit);
+		Defenser->PV = Defenser->PV - tmp;
+		if (Defenser->PV) {
+			Defenser->Unit = Defenser->PV / Defenser->UnitPv;
+			tmp = (Defenser->Atc * Defenser->Unit) - (Def * Unit);
+			PV = PV - tmp;
+				if (PV)
+					Unit = PV / UnitPv;
+		}
+	}
 }
 
 /*void AGridPawn::OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey)

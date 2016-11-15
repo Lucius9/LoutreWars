@@ -33,13 +33,19 @@ public:
 protected:
 	void GetAllTiles(TArray<UGridTileComponent*> &Out, UWorld *World);
 	UGridTileComponent * LineTraceTile(const FVector &Start, const FVector &End);
+	AGridPawn *LineTracePawn(const FVector &Start, const FVector &End);	
+	void ResetTiles();
 
 public :
 	UGridTileComponent *GetTile(const FVector &Position);
-	virtual void TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests);
-	virtual void ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn);
-	virtual void HideTilesInRange();
+	AGridPawn *GetPawn(UGridTileComponent *Tile);
+	virtual void TilesInMovementRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests);
+	virtual void ShowMovementRange(UGridTileComponent *Tile, AGridPawn *Pawn);
+	virtual void HideMovementRange();
 	static ECollisionChannel ECC_Tile;
+	virtual void TilesInAttackRange(AGridPawn *Pawn, TArray<UGridTileComponent*> &Out);
+	virtual void GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out);
+	
 
 public:
 	void TileCursorOver(UGridTileComponent &Tile);

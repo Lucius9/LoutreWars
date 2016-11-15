@@ -69,7 +69,7 @@ void ANavGrid::GetAllTiles(TArray<UGridTileComponent*> &Out, UWorld *World)
 	}
 }
 
-void ANavGrid::TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests)
+void ANavGrid::TilesInMovementRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests)
 {
 	OutArray.Empty();
 	TArray<UGridTileComponent*> AllTiles;
@@ -120,11 +120,11 @@ void ANavGrid::TilesInRange(UGridTileComponent * Tile, TArray<UGridTileComponent
 	}
 }
 
-void ANavGrid::ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn)
+void ANavGrid::ShowMovementRange(UGridTileComponent *Tile, AGridPawn *Pawn)
 {
 	HighlightedTiles.Empty();
 	TArray<UGridTileComponent*>Range;
-	TilesInRange(Tile, Range, Pawn, true);
+	TilesInMovementRange(Tile, Range, Pawn, true);
 	for (UGridTileComponent*T : Range)
 	{
 		AActor *Actor = T->GetOwner();
@@ -137,7 +137,7 @@ void ANavGrid::ShowTilesInRange(UGridTileComponent *Tile, AGridPawn *Pawn)
 	}
 }
 
-void ANavGrid::HideTilesInRange()
+void ANavGrid::HideMovementRange()
 {
 	for (AGridTile *T : HighlightedTiles)
 	{
@@ -173,9 +173,87 @@ UGridTileComponent * ANavGrid::LineTraceTile(const FVector &Start, const FVector
 	return NULL;
 }
 
+AGridPawn * ANavGrid::LineTracePawn(const FVector &Start,const FVector &End)
+{
+	FHitResult HitResult;
+	TArray<FHitResult> HitResults;
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End,ECollisionChannel::ECC_Pawn);
+	AActor *Actor = HitResult.GetActor();
+	AGridPawn *Pawn = Cast<AGridPawn>(Actor);
+	if (IsValid(Pawn))
+	{		
+		return Pawn;
+	}	
+	return NULL;
+}
+
+void ANavGrid::GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out)
+{
+	Out.Empty();
+	TArray<UGridTileComponent *> AttackRange;
+	TilesInAttackRange(Pawn, AttackRange);
+	for (UGridTileComponent *N : AttackRange)
+	{		
+		AGridPawn *Target = GetPawn(N);			
+		if (Target && Target->IsAttackableBy(Pawn))
+		{
+			Out.Add(Target);
+		}
+	}
+}
+
 UGridTileComponent* ANavGrid::GetTile(const FVector &Position)
 {	
 	return LineTraceTile(Position - FVector(0.0f, 10.0f, 0.0f), Position + FVector(0.0f, 10.0f, 0.0f));
+}
+
+AGridPawn * ANavGrid::GetPawn(UGridTileComponent *Tile)
+{
+	return LineTracePawn(Tile->GetComponentLocation(), Tile->PawnLocation->GetComponentLocation());
+}
+
+void ANavGrid::ResetTiles()
+{
+	TArray<UGridTileComponent *>Tiles;
+	GetAllTiles(Tiles, GetWorld());
+	for (UGridTileComponent *N : Tiles)
+	{
+		N->ResetPath();
+	}
+}
+
+void ANavGrid::TilesInAttackRange(AGridPawn *Pawn, TArray<UGridTileComponent*> &Out)
+{
+	ResetTiles();
+	Out.Empty();
+	UGridTileComponent *Current = GetTile(Pawn->GetActorLocation());	
+	TArray<UGridTileComponent *>CheckList;
+	Current->Distance = 0;	
+	while (Current)
+	{		
+		for (UGridTileComponent *N : *(Current->GetNeighbours()))
+		{		
+			if (!N->Visited)
+			{				
+				N->Backpointer = Current;
+				N->Distance = Current->Distance + 1;
+				if (N->Distance >= Pawn->AttackRangeMin && N->Distance <= Pawn->AttackRangeMax)
+				{
+					Out.Add(N);
+					CheckList.Add(N);
+				}
+			}
+			
+		}	
+		Current->Visited = true;
+		CheckList.Remove(Current);
+		Current = NULL;
+		if (CheckList.Num() > 0)
+		{
+			Current = CheckList[0];
+		}		
+	}		
 }
 
 void ANavGrid::TileCursorOver(UGridTileComponent &Tile)

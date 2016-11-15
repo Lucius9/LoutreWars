@@ -54,23 +54,23 @@ void AGridPawnPlayerController::OnEndTileCursorOver(const UGridTileComponent &Ti
 void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 {	
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
-	if (IsValid(ControlledPawn))
+	if (IsValid(ControlledPawn) && Mode==EControllerMode::Movement)
 	{
 		UGridMovementComponent *MovementComponent=ControlledPawn->MovementComponent;
 		UGridTileComponent *Location = Grid->GetTile(ControlledPawn->GetActorLocation());		
 		if (Grid)
 		{
-			Grid->HideTilesInRange();
+			Grid->HideMovementRange();
 			if (Location)
 			{					
 				TArray<UGridTileComponent *> InRange;
-				Grid->TilesInRange(Location, InRange, ControlledPawn, true);
+				Grid->TilesInMovementRange(Location, InRange, ControlledPawn, true);
 				if (InRange.Contains(&Tile))
 				{				
 					Location->UnderCurrentPawn = false;
 					MovementComponent->MoveTo((UGridTileComponent &)Tile);
 					MovementComponent->HidePath();
-					UnPossess();
+					//UnPossess();
 					EnableNavigationMode();
 				}
 			}			

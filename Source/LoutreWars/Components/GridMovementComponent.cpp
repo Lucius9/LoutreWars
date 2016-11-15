@@ -58,6 +58,18 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 			Moving = false;
 			Distance = 0;
 			Velocity = FVector::ZeroVector;
+			//attack auto
+			AGridPawn *Pawn = Cast<AGridPawn>(Owner);
+			if (Pawn)
+			{		
+				print("here pppppp");
+				TArray<AGridPawn *> EnnemiesInRange;
+				Grid->GetEnnemiesInRange(Pawn, EnnemiesInRange);
+				print("Ennemies : " + FString::FromInt(EnnemiesInRange.Num()));
+				if (EnnemiesInRange.Num() > 0) {
+					Pawn->Attack(EnnemiesInRange[0], true );
+				}
+			}
 		}
 		else
 		{			
@@ -91,7 +103,7 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
 	if (CurrentTile != NULL )
 	{
 		TArray<UGridTileComponent*> Range;
-		Grid->TilesInRange(CurrentTile, Range, Pawn, true);		
+		Grid->TilesInMovementRange(CurrentTile, Range, Pawn, true);		
 		if (Range.Contains(&Target))
 		{			
 			UGridTileComponent *Current = &Target;
