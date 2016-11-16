@@ -8,6 +8,16 @@
 #include "Components/GridMovementComponent.h"
 #include "GridPawn.generated.h"
 
+/*UENUM(BlueprintType)
+enum class EClasseEnum : uint8
+{
+	Infrantrie			UMETA(DisplayName = "Infrantrie"),
+	Tank				UMETA(DisplayName = "Tank"),
+	Antichar			UMETA(DisplayName = "Antichar"),
+	None				UMETA(DisplayName = "None"),
+};
+*/
+
 UCLASS()
 class LOUTREWARS_API AGridPawn : public APawn
 {
@@ -59,6 +69,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int DefSpe;
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Classe")
+	EClasseEnum Classe;*/
 
 	// Sets default values for this pawn's properties
 	AGridPawn();
