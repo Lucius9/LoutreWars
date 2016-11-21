@@ -188,6 +188,7 @@ AGridPawn * ANavGrid::LineTracePawn(const FVector &Start,const FVector &End)
 	return NULL;
 }
 
+
 void ANavGrid::GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out)
 {
 	Out.Empty();

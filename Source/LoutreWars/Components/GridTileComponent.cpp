@@ -121,16 +121,19 @@ TArray<UGridTileComponent*>* UGridTileComponent::GetNeighbours()
 	}
 	return &Neighbours;
 }
-/*
-TODO add movementmode for legacy 
-	example: water tile accessible only for swimming pawns
-*/
-bool UGridTileComponent::Traversable(float MaxWalkAngle)
+
+
+bool UGridTileComponent::Traversable(class AGridPawn *GridPawn)
 {
-	FRotator Rot = GetComponentRotation();
-	if (Rot.Pitch < MaxWalkAngle && Rot.Pitch > -MaxWalkAngle)
+	for (EGridMovementMode PawnMovementMode : GridPawn->MovementComponent->AvailableMovementModes)
 	{
-		return true;
+		for (EGridMovementMode TileMovementMode : TileMovementModes)
+		{
+			if (PawnMovementMode == TileMovementMode)
+			{
+				return true;
+			}
+		}
 	}
 	return false;
 }
@@ -182,11 +185,42 @@ void UGridTileComponent::GetUnobstructedNeighbours(const UCapsuleComponent & Col
 	}
 }
 
+void UGridTileComponent::GetTraversableNeighbours(class AGridPawn *GridPawn, TArray<UGridTileComponent *> &OutNeighbours)
+{
+	OutNeighbours.Empty();
+	TArray<UGridTileComponent*> *TileNeighbours = GetNeighbours();
+	for (UGridTileComponent *N : *TileNeighbours)
+	{
+		if (N->Traversable(GridPawn))
+		{
+			OutNeighbours.Add(N);
+		}
+	}
+}
+
 void UGridTileComponent::ResetPath()
 {
 	Backpointer = NULL;
 	Distance = std::numeric_limits<float>::infinity();
 	Visited = false;
+}
+
+void UGridTileComponent::ComputeHScore(UGridTileComponent *To)
+{
+	FVector FromLocation = GetComponentLocation();
+	FVector ToLocation = To->GetComponentLocation();
+	
+	HScore= abs((ToLocation.X - FromLocation.X) + (ToLocation.Z - FromLocation.Z));
+}
+
+int UGridTileComponent::GetHScore()
+{
+	return HScore;
+}
+int UGridTileComponent::GetFScore()
+{
+	
+	return Distance + HScore;
 }
 
 FVector UGridTileComponent::GetPawnLocation()

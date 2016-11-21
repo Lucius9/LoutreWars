@@ -2,6 +2,7 @@
 
 #include "LoutreWars.h"
 #include "Components/GridMovementComponent.h"
+#include "LoutreWarsGameMode.h"
 #include "GridPawnPlayerController.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
@@ -27,16 +28,31 @@ void AGridPawnPlayerController::BeginPlay()
 		Grid->OnEndTileCursorOver().AddUObject(this, &AGridPawnPlayerController::OnEndTileCursorOver);
 		Grid->OnTileClicked().AddUObject(this, &AGridPawnPlayerController::OnTileClicked);
 	}
+	/*
+	TODO pawn list
+	*/
+	for (TActorIterator<AGridPawn> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	{
+		ActorItr->MovementComponent->OnMovementEnd().AddUObject(this, &AGridPawnPlayerController::OnPawnMovementEnd);
+	}
+}
 
+void AGridPawnPlayerController::SelectPawn(AGridPawn *GridPawn)
+{
+	if (!Busy && this->GetPawn()!=GridPawn)
+	{
+		Possess(GridPawn);
+	}
 }
 
 void AGridPawnPlayerController::OnTileCursorOver(const UGridTileComponent &Tile)
 {
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
 	if (IsValid(ControlledPawn) && !ControlledPawn->IsMoving() && Mode==EControllerMode::Movement)
-	{	
-		if (ControlledPawn->MovementComponent->CreatePath((UGridTileComponent &)Tile))
-		{			
+	{
+		UGridTileComponent *TilePointer=(UGridTileComponent *)&Tile;		
+		if (ControlledPawn->MovementComponent->CreatePath2(TilePointer))
+		{				
 			ControlledPawn->MovementComponent->ShowPath();
 		}
 	}
@@ -66,7 +82,8 @@ void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 				TArray<UGridTileComponent *> InRange;
 				Grid->TilesInMovementRange(Location, InRange, ControlledPawn, true);
 				if (InRange.Contains(&Tile))
-				{				
+				{	
+					Busy = true;
 					Location->UnderCurrentPawn = false;
 					MovementComponent->MoveTo((UGridTileComponent &)Tile);
 					MovementComponent->HidePath();
@@ -79,7 +96,7 @@ void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 }
 void AGridPawnPlayerController::EnableMovementMode()
 {
-	Mode = EControllerMode::Movement;
+	Mode = EControllerMode::Movement;	
 }
 
 void AGridPawnPlayerController::EnableNavigationMode()
@@ -90,4 +107,55 @@ void AGridPawnPlayerController::EnableNavigationMode()
 void AGridPawnPlayerController::EnableAttackMode()
 {
 	Mode = EControllerMode::Attack;
+}
+
+void AGridPawnPlayerController::DisplayRange()
+{
+	AGridPawn *GridPawn = Cast<AGridPawn>(GetPawn());
+	TActorIterator<ANavGrid>Itr(GetWorld());
+	if (*Itr != NULL && GridPawn)
+	{
+		Itr->HideTilesInRange();
+		UGridTileComponent* CurrentTile = Itr->GetTile(GridPawn->GetActorLocation());
+		print(CurrentTile->GetOwner()->GetActorLabel());
+		if (CurrentTile)
+		{
+			CurrentTile->UnderCurrentPawn = true;
+			TArray<UGridTileComponent*> Out;
+			Itr->ShowTilesInRange(CurrentTile, GridPawn);
+		}
+		else
+		{
+			print("CurrentTile NULL");
+		}
+	}
+	else
+	{
+		print("Itr null");
+	}
+}
+
+void AGridPawnPlayerController::OnPawnMovementEnd(AGridPawn &GridPawn)
+{
+	SelectPawn(&GridPawn);
+	Busy = false;
+	EnableEndMovementWidget();
+}
+
+void AGridPawnPlayerController::EnableMovementWidget()
+{
+	if (!Busy)
+	{
+		ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		GM->EnableMovementWidget();
+	}	
+}
+
+void AGridPawnPlayerController::EnableEndMovementWidget()
+{
+	if (!Busy)
+	{
+		ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		GM->EnableEndMovementWidget();
+	}	
 }

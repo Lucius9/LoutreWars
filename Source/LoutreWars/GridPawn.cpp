@@ -4,6 +4,7 @@
 #include "NavGrid.h"
 #include "GridPawnPlayerController.h"
 #include "GridPlayerState.h"
+#include "LoutreWarsGameMode.h"
 #include "GridPawn.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
@@ -75,37 +76,20 @@ void AGridPawn::Tick( float DeltaTime )
 void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
 {		
 	if (!MovementComponent->IsMoving())
-	{
+	{		
 		APlayerController *SomeController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
-		if (GPPC->GetPawn() != this)
-		{
-			GPPC->Possess(this);
-		}
+		AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);			
 		if (GPPC)
 		{
-			GPPC->EnableMovementMode();			
+			GPPC->SelectPawn(this);
 		}
-		TActorIterator<ANavGrid>Itr(GetWorld());
-		if (*Itr != NULL)
+		if (MovementComponent->HasMoved==false && !HasPlayed)
 		{
-			Itr->HideMovementRange();
-			UGridTileComponent* CurrentTile = Itr->GetTile(GetActorLocation());
-			print(CurrentTile->GetOwner()->GetActorLabel());
-			if (CurrentTile)
-			{
-				CurrentTile->UnderCurrentPawn = true;
-				TArray<UGridTileComponent*> Out;
-				Itr->ShowMovementRange(CurrentTile, this);
-			}
-			else
-			{
-				print("CurrentTile NULL");
-			}
-		}
-		else
+			GPPC->EnableMovementWidget();
+		}	
+		else if (!HasPlayed)
 		{
-			print("Itr null");
+			GPPC->EnableEndMovementWidget();
 		}
 	}	
 }

@@ -7,9 +7,7 @@
 #include "Components/SplineComponent.h"
 #include "GridMovementComponent.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class LOUTREWARS_API UGridMovementComponent : public UPawnMovementComponent
 {
@@ -34,20 +32,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float CurrentPitch;		
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MovementMode")
+	TArray<EGridMovementMode> AvailableMovementModes;
+
 public :
 	static float FaceUp;
 	static float FaceDown;
 	static float FaceLeft;
-	static float FaceRight;
+	static float FaceRight;	
 
-protected:
+	bool HasMoved = false;
 
-	
+protected:	
 	UGridTileComponent *CurrentTile;
 	TArray<UGridTileComponent *>CurrentPath;
 	class ANavGrid *Grid;
-	bool Moving=false;
+	bool Moving=false;	
 	float Distance = 0;
+	TArray<UGridTileComponent *>OpenList;
+	TArray<UGridTileComponent*> ClosedList;
 
 
 public:
@@ -62,14 +65,28 @@ public:
 	//Pathing
 public :
 	bool CreatePath(UGridTileComponent &Target);	
+	bool CreatePath2(UGridTileComponent *Target);
 	void ShowPath();
 	void HidePath();
 	bool MoveTo(UGridTileComponent &Target);
 	void FollowPath();
 	void StopMoving();
+	UFUNCTION(BlueprintCallable,Category="Movement")
+	void EndMovement();
+	UFUNCTION(BlueprintCallable, Category="Movement")
+	void GoBackOnPreviousTile();
 
 protected :	
+	void InsertInOpenList(UGridTileComponent* Tile);
+	bool ComputePath(UGridTileComponent *From, UGridTileComponent *To);
 	float ComputeTargetPitch(const FVector &PawnLocation, const FVector &Target);
 	float ComputeDeltaPitch(const float &OldPitch, const float &NewPitch);
 	float LimitRotation(const float &OldPitch, const float &NewPitch, float DeltaSeconds);
+
+public:
+	DECLARE_EVENT_OneParam (UGridMovementComponent,FOnMovementDone,AGridPawn&)
+	FOnMovementDone& OnMovementEnd() { return OnMovementEndEvent; }
+
+private:
+	FOnMovementDone OnMovementEndEvent;
 };

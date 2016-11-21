@@ -45,6 +45,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int Unit;
 
+	bool HasPlayed = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int UnitPv;
 

@@ -27,17 +27,33 @@ protected :
 	EControllerMode Mode=EControllerMode::Navigation;
 
 public:
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="ControllerMode")
+	bool Busy = false;
+
+public:
 	AGridPawnPlayerController();
 
 	virtual void BeginPlay()override;
-	
+	virtual void SelectPawn(AGridPawn *GridPawn);
 	void OnTileCursorOver(const UGridTileComponent &Tile);
 	void OnEndTileCursorOver(const UGridTileComponent &Tile);
 	void OnTileClicked(const UGridTileComponent &Tile);
+	void OnPawnMovementEnd(AGridPawn &GridPawn);
 	
 public :
+	UFUNCTION(BlueprintCallable, Category = "ControllerMode")
 	void EnableMovementMode();
+	UFUNCTION(BlueprintCallable, Category = "ControllerMode")
 	void EnableNavigationMode();
+	UFUNCTION(BlueprintCallable, Category = "ControllerMode")
 	void EnableAttackMode();
+
+public :
+	void EnableMovementWidget();
+	void EnableEndMovementWidget();
+
+public :
+	UFUNCTION(BlueprintCallable,Category="Movement")
+	void DisplayRange();
 
 };

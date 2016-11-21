@@ -15,11 +15,12 @@ class LOUTREWARS_API ANavGrid : public AActor
 
 protected:
 	TArray<AGridTile*>HighlightedTiles;
-	
+
 public:	
 	// Sets default values for this actor's properties
 	ANavGrid();
 
+	UFUNCTION(BlueprintCallable,Category="Utilities")
 	static ANavGrid *GetNavGrid(UWorld *World);
 
 	virtual void OnConstruction(const FTransform &Transform) override;
@@ -39,9 +40,11 @@ protected:
 public :
 	UGridTileComponent *GetTile(const FVector &Position);
 	AGridPawn *GetPawn(UGridTileComponent *Tile);
+
 	virtual void TilesInMovementRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests);
 	virtual void ShowMovementRange(UGridTileComponent *Tile, AGridPawn *Pawn);
 	virtual void HideMovementRange();
+
 	static ECollisionChannel ECC_Tile;
 	virtual void TilesInAttackRange(AGridPawn *Pawn, TArray<UGridTileComponent*> &Out);
 	virtual void GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out);
