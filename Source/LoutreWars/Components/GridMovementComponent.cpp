@@ -136,7 +136,7 @@ bool UGridMovementComponent::CreatePath2(UGridTileComponent *To)
 	AGridPawn *GridPawn = Cast<AGridPawn>(GetOwner());
 	TArray<UGridTileComponent*> Range;
 	UGridTileComponent *From = Grid->GetTile(GridPawn->GetActorLocation());
-	Grid->TilesInRange(From, Range, GridPawn, true);
+	Grid->TilesInMovementRange(From, Range, GridPawn, true);
 	Spline->ClearSplinePoints(true);
 
 	if (Range.Contains(To))

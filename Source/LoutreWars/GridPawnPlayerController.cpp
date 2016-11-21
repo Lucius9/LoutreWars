@@ -115,14 +115,14 @@ void AGridPawnPlayerController::DisplayRange()
 	TActorIterator<ANavGrid>Itr(GetWorld());
 	if (*Itr != NULL && GridPawn)
 	{
-		Itr->HideTilesInRange();
+		Itr->HideMovementRange();
 		UGridTileComponent* CurrentTile = Itr->GetTile(GridPawn->GetActorLocation());
 		print(CurrentTile->GetOwner()->GetActorLabel());
 		if (CurrentTile)
 		{
 			CurrentTile->UnderCurrentPawn = true;
 			TArray<UGridTileComponent*> Out;
-			Itr->ShowTilesInRange(CurrentTile, GridPawn);
+			Itr->ShowMovementRange(CurrentTile, GridPawn);
 		}
 		else
 		{
