@@ -27,7 +27,7 @@ public:
 	UBoxComponent *Extent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float Cost;
+	float Cost=1.0f;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Neighbours")
 	TArray<UGridTileComponent*> Neighbours;
@@ -84,6 +84,9 @@ public:
 	int GetFScore();
 
 public : 
+	UFUNCTION()
+	void OnTileTouched(ETouchIndex::Type FingerIndex, UPrimitiveComponent *TouchedComponent);
+
 	UFUNCTION()
 	void OnTileCursorOver(UPrimitiveComponent* TouchedComponent);
 

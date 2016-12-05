@@ -22,6 +22,8 @@ public:
 	void ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass);
 	void EnableMovementWidget();
 	void EnableEndMovementWidget();
+	void EnableAttackWidget();
+	void HideWidget();
 
 protected:
 	/** The widget class we will use as our menu when the game starts. */

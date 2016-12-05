@@ -18,28 +18,29 @@ AGridTile::AGridTile()
 	SpriteComponent->SetupAttachment(RootComponent);
 	SpriteComponent->SetCollisionProfileName("OverlapAllDynamic");
 
-	OverlaySpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("OverlaySprite"));
-	OverlaySpriteComponent->SetupAttachment(RootComponent);
-	OverlaySpriteComponent->SetSprite(NULL);
-	OverlaySpriteComponent->SetRelativeLocation(FVector(0.0f, 0.1f, 0.0f));
-	OverlaySpriteComponent->SetCollisionProfileName("OverlapAllDynamic");	
-	DisableRangeOverlay();
+	FocusOverlaySpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("FocusOverlaySprite"));
+	FocusOverlaySpriteComponent->SetupAttachment(RootComponent);
+	FocusOverlaySpriteComponent->SetSprite(NULL);
+	FocusOverlaySpriteComponent->SetRelativeLocation(FVector(0.0f, 0.1f, 0.0f));
+	FocusOverlaySpriteComponent->SetCollisionProfileName("OverlapAllDynamic");
+	DisableCurrentTileOverlay();
 
-	PathOverlaySpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>("PathOverlaySprite");
-	PathOverlaySpriteComponent->SetupAttachment(RootComponent);
-	PathOverlaySpriteComponent->SetSprite(NULL);
-	PathOverlaySpriteComponent->SetRelativeLocation(FVector(0.0f, 0.2f, 0.0f));
-	PathOverlaySpriteComponent->SetCollisionProfileName("OverlapAllDynamic");
+	BottomOverlaySpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("BottomOverlaySprite"));
+	BottomOverlaySpriteComponent->SetupAttachment(RootComponent);
+	BottomOverlaySpriteComponent->SetSprite(NULL);
+	BottomOverlaySpriteComponent->SetRelativeLocation(FVector(0.0f, 0.2f, 0.0f));
+	BottomOverlaySpriteComponent->SetCollisionProfileName("OverlapAllDynamic");	
+	DisableMovementRangeOverlay();
+
+	TopOverlaySpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>("TopOverlaySprite");
+	TopOverlaySpriteComponent->SetupAttachment(RootComponent);
+	TopOverlaySpriteComponent->SetSprite(NULL);
+	TopOverlaySpriteComponent->SetRelativeLocation(FVector(0.0f, 0.3f, 0.0f));
+	TopOverlaySpriteComponent->SetCollisionProfileName("OverlapAllDynamic");
 	DisablePathOverlay();
 
 	GridTileComponent = CreateDefaultSubobject<UGridTileComponent>(TEXT("GridTileComponent"));
 	GridTileComponent->SetupAttachment(RootComponent);
-
-	FlipbookComponent = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("FlipbookComponent"));
-	FlipbookComponent->SetCollisionProfileName("OverlapAllDynamic");
-	FlipbookComponent->SetupAttachment(RootComponent);
-
-
 }
 
 // Called when the game starts or when spawned
@@ -54,47 +55,72 @@ void AGridTile::Tick( float DeltaTime )
 	Super::Tick( DeltaTime );
 }
 
-void AGridTile::PostEditChangeProperty(struct FPropertyChangedEvent& e)
+void AGridTile::EnableMovementRangeOverlay()
 {
-	Super::PostEditChangeProperty(e);
-	/*FName PropertyName = (e.Property != NULL) ? e.Property->GetFName() : NAME_None;
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AGridTile, Sprite))
-	{
-		SpriteComponent->SetSprite(Sprite);
-		Flipbook = NULL;
-	}
-	else if (PropertyName == GET_MEMBER_NAME_CHECKED(AGridTile, Flipbook))
-	{
-		FlipbookComponent->SetFlipbook(Flipbook);
-		Sprite = NULL;
-	}
-
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AGridTile, Cost))
-	{
-		GridTileComponent->SetCost(Cost);
-	}*/
+	BottomOverlaySpriteComponent->SetSprite(MovementRangeOverlaySprite);
+	BottomOverlaySpriteComponent->SetVisibility(true, true);
+	BottomOverlaySpriteComponent->SetHiddenInGame(false);	
 }
 
-void AGridTile::EnableRangeOverlay()
+void AGridTile::DisableMovementRangeOverlay()
 {
-	OverlaySpriteComponent->SetVisibility(true, true);
-	OverlaySpriteComponent->SetHiddenInGame(false);	
-}
-
-void AGridTile::DisableRangeOverlay()
-{
-	OverlaySpriteComponent->SetVisibility(false, true);
-	OverlaySpriteComponent->SetHiddenInGame(true);
+	BottomOverlaySpriteComponent->SetSprite(NULL);
+	BottomOverlaySpriteComponent->SetVisibility(false, true);
+	BottomOverlaySpriteComponent->SetHiddenInGame(true);
 }
 
 void AGridTile::EnablePathOverlay()
 {
-	PathOverlaySpriteComponent->SetVisibility(true, true);
-	PathOverlaySpriteComponent->SetHiddenInGame(false);
+	TopOverlaySpriteComponent->SetSprite(PathOverlaySprite);
+	TopOverlaySpriteComponent->SetVisibility(true, true);
+	TopOverlaySpriteComponent->SetHiddenInGame(false);
 }
 
 void AGridTile::DisablePathOverlay()
 {
-	PathOverlaySpriteComponent->SetVisibility(false, true);
-	PathOverlaySpriteComponent->SetHiddenInGame(true);
+	TopOverlaySpriteComponent->SetSprite(NULL);
+	TopOverlaySpriteComponent->SetVisibility(false, true);
+	TopOverlaySpriteComponent->SetHiddenInGame(true);
+}
+
+void AGridTile::EnableAttackRangeOverlay()
+{
+	BottomOverlaySpriteComponent->SetSprite(AttackRangeOverlaySprite);
+	BottomOverlaySpriteComponent->SetVisibility(true, true);
+	BottomOverlaySpriteComponent->SetHiddenInGame(false);
+}
+
+void AGridTile::DisableAttackRangeOverlay()
+{
+	BottomOverlaySpriteComponent->SetSprite(NULL);
+	BottomOverlaySpriteComponent->SetVisibility(false, true);
+	BottomOverlaySpriteComponent->SetHiddenInGame(true);
+}
+
+void AGridTile::EnableAttackOverlay()
+{
+	BottomOverlaySpriteComponent->SetSprite(AttackOverlaySprite);
+	BottomOverlaySpriteComponent->SetVisibility(true, true);
+	BottomOverlaySpriteComponent->SetHiddenInGame(false);
+}
+
+void AGridTile::DisableAttackOverlay()
+{
+	BottomOverlaySpriteComponent->SetSprite(NULL);
+	BottomOverlaySpriteComponent->SetVisibility(false, true);
+	BottomOverlaySpriteComponent->SetHiddenInGame(true);
+}
+
+void AGridTile::EnableCurrentTileOverlay()
+{
+	FocusOverlaySpriteComponent->SetSprite(CurrentTileOverlaySprite);
+	FocusOverlaySpriteComponent->SetVisibility(true, true);
+	FocusOverlaySpriteComponent->SetHiddenInGame(false);
+}
+
+void AGridTile::DisableCurrentTileOverlay()
+{
+	FocusOverlaySpriteComponent->SetSprite(NULL);
+	FocusOverlaySpriteComponent->SetVisibility(false, true);
+	FocusOverlaySpriteComponent->SetHiddenInGame(true);
 }

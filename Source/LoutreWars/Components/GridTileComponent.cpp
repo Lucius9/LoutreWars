@@ -5,7 +5,7 @@
 #include "NavGrid.h"
 #include "GridTileComponent.h"
 
-#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 // Sets default values for this component's properties
 UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializer) 
@@ -21,6 +21,7 @@ UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializ
 	Extent->OnBeginCursorOver.AddDynamic(this, &UGridTileComponent::OnTileCursorOver);	
 	Extent->OnEndCursorOver.AddDynamic(this, &UGridTileComponent::OnEndTileCursorOver);
 	Extent->OnClicked.AddDynamic(this, &UGridTileComponent::OnTileClicked);
+	Extent->OnInputTouchEnd.AddDynamic(this, &UGridTileComponent::OnTileTouched);
 
 
 	PawnLocation = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this,"PawnLocation");
@@ -41,37 +42,7 @@ void UGridTileComponent::OnComponentCreated()
 	Super::OnComponentCreated();	
 	TArray<USceneComponent*>Children;
 	this->GetAttachParent()->GetChildrenComponents(false, Children);
-	FVector2D Size;
-	bool sizeInitialized = false;
-	for (int i = 0; i < Children.Num();++i)
-	{
-		USceneComponent* Child = Children[i];
-		UPaperFlipbookComponent *FlipbookComponent = Cast<UPaperFlipbookComponent>(Child);
-		UPaperSpriteComponent *MainSpriteComponent = Cast<UPaperSpriteComponent>(Child);
-		if (FlipbookComponent)
-		{
-			if (FlipbookComponent->GetFlipbook() != NULL)
-			{
-				UPaperSprite *Sprite = FlipbookComponent->GetFlipbook()->GetSpriteAtFrame(0);
-				Size = Sprite->GetSourceSize();
-				sizeInitialized = true;
-
-			}
-		}
-		else if (MainSpriteComponent)
-		{
-			if (MainSpriteComponent->GetSprite() != NULL)
-			{
-				Size = MainSpriteComponent->GetSprite()->GetSourceSize();
-				sizeInitialized = true;
-
-			}			
-		}
-	}
-	if (!sizeInitialized)
-	{
-		Size = FVector2D(16.0f, 16.0f);
-	}
+	FVector2D Size = FVector2D(16.0f, 16.0f);	
 	Extent->SetBoxExtent(FVector((Size.X)/2,0.0f,(Size.Y)/2));
 }
 
@@ -228,6 +199,14 @@ FVector UGridTileComponent::GetPawnLocation()
 	return PawnLocation->GetComponentLocation();
 }
 
+void UGridTileComponent::OnTileTouched(ETouchIndex::Type FingerIndex,UPrimitiveComponent *TouchedComponent)
+{
+	if (Grid && !UnderCurrentPawn)
+	{
+		Grid->TileTouched(*this);
+	}
+}
+
 void UGridTileComponent::OnTileCursorOver(UPrimitiveComponent* TouchedComponent)
 {
 	if (Grid && !UnderCurrentPawn)
@@ -248,7 +227,7 @@ void UGridTileComponent::OnTileClicked(UPrimitiveComponent* TouchedComponent, FK
 {
 	
 	if (Grid && !UnderCurrentPawn)
-	{
+	{	
 		Grid->TileClicked(*this);
 	}
 }

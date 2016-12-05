@@ -32,6 +32,11 @@ void ALoutreWarsGameMode::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetCla
 	}
 }
 
+void ALoutreWarsGameMode::HideWidget()
+{
+	ChangeMenuWidget(NULL);
+}
+
 void ALoutreWarsGameMode::EnableMovementWidget()
 {
 	ChangeMenuWidget(MovementWidgetClass);
@@ -40,4 +45,9 @@ void ALoutreWarsGameMode::EnableMovementWidget()
 void ALoutreWarsGameMode::EnableEndMovementWidget()
 {
 	ChangeMenuWidget(EndMovementWidgetClass);
+}
+
+void ALoutreWarsGameMode::EnableAttackWidget()
+{
+	ChangeMenuWidget(AttackWidgetClass);
 }

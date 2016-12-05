@@ -3,9 +3,10 @@
 #include "LoutreWars.h"
 #include "Components/GridMovementComponent.h"
 #include "LoutreWarsGameMode.h"
+#include "GridPlayerState.h"
 #include "GridPawnPlayerController.h"
 
-#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 
 AGridPawnPlayerController::AGridPawnPlayerController()
@@ -23,18 +24,28 @@ void AGridPawnPlayerController::BeginPlay()
 	TActorIterator<ANavGrid> Itr(GetWorld());
 	if (Itr)
 	{
-		Grid = *Itr;
-		Grid->OnTileCursorOver().AddUObject(this, &AGridPawnPlayerController::OnTileCursorOver);
-		Grid->OnEndTileCursorOver().AddUObject(this, &AGridPawnPlayerController::OnEndTileCursorOver);
+		Grid = *Itr;		
+		Grid->OnTileTouched().AddUObject(this, &AGridPawnPlayerController::OnTileTouched);
 		Grid->OnTileClicked().AddUObject(this, &AGridPawnPlayerController::OnTileClicked);
 	}
-	/*
-	TODO pawn list
-	*/
-	for (TActorIterator<AGridPawn> ActorItr(GetWorld()); ActorItr; ++ActorItr)
-	{
-		ActorItr->MovementComponent->OnMovementEnd().AddUObject(this, &AGridPawnPlayerController::OnPawnMovementEnd);
+	
+	ULocalPlayer * LP = Cast<ULocalPlayer>(Player);
+	if (LP)
+	{		
+		for (TActorIterator<AGridPawn> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		{			
+			if (ActorItr->AutoPossessAI==EAutoPossessAI::Disabled)
+			{
+				ActorItr->MovementComponent->OnMovementEnd().AddUObject(this, &AGridPawnPlayerController::OnPawnMovementEnd);
+				PawnsList.Add(*ActorItr);
+			}
+		}
 	}
+}
+
+bool AGridPawnPlayerController::CanSelectPawn(AGridPawn *GridPawn)
+{
+	return PawnsList.Contains(GridPawn);
 }
 
 void AGridPawnPlayerController::SelectPawn(AGridPawn *GridPawn)
@@ -45,54 +56,112 @@ void AGridPawnPlayerController::SelectPawn(AGridPawn *GridPawn)
 	}
 }
 
-void AGridPawnPlayerController::OnTileCursorOver(const UGridTileComponent &Tile)
+void AGridPawnPlayerController::OnTileTouched(const UGridTileComponent &Tile)
 {
+	ChangeFocusedTile((UGridTileComponent*)&Tile);
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
-	if (IsValid(ControlledPawn) && !ControlledPawn->IsMoving() && Mode==EControllerMode::Movement)
+	AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
+	if (Mode == EControllerMode::Navigation && GridPawn != NULL)
 	{
-		UGridTileComponent *TilePointer=(UGridTileComponent *)&Tile;		
-		if (ControlledPawn->MovementComponent->CreatePath2(TilePointer))
-		{				
-			ControlledPawn->MovementComponent->ShowPath();
+		if (CanSelectPawn(GridPawn))
+		{
+			SelectPawn(GridPawn);
+			if (!GridPawn->MovementComponent->HasMoved && !GridPawn->HasPlayed)
+			{
+				//print("here");
+				DisplayMovementRange();
+				Mode = EControllerMode::Movement;
+			}
+
 		}
 	}
-}
-
-void AGridPawnPlayerController::OnEndTileCursorOver(const UGridTileComponent &Tile)
-{
-	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
-	if (IsValid(ControlledPawn) && Mode == EControllerMode::Movement)
+	else if (Mode == EControllerMode::Movement && IsValid(ControlledPawn))
 	{
-		ControlledPawn->MovementComponent->HidePath();
+		if (!ControlledPawn->MovementComponent->HasMoved && !ControlledPawn->HasPlayed)
+		{
+			EnableMovementWidget();
+			ControlledPawn->MovementComponent->HidePath();
+			if (ControlledPawn->MovementComponent->CreatePath2(FocusedTile))
+			{
+				ControlledPawn->MovementComponent->ShowPath();
+			}
+			else
+			{
+				CancelMovement();
+			}
+		}
+	}
+	else if (Mode == EControllerMode::Attack && IsValid(ControlledPawn))
+	{
+		if (GridPawn && GridPawn != ControlledPawn && GridPawn->IsAttackableBy(ControlledPawn))
+		{
+			EnableAttackWidget();
+		}
+		if (!Tile.UnderCurrentPawn && Grid)
+		{
+			//print("here again");
+			AGridPawn *Target = Grid->GetPawn((UGridTileComponent *)&Tile);
+			if (Target && Target->IsAttackableBy(ControlledPawn))
+			{
+				//print("there");
+				ControlledPawn->Attack(Target, true);
+			}
+		}
 	}
 }
 
 void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 {	
+	ChangeFocusedTile((UGridTileComponent*)&Tile);
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
-	if (IsValid(ControlledPawn) && Mode==EControllerMode::Movement)
-	{
-		UGridMovementComponent *MovementComponent=ControlledPawn->MovementComponent;
-		UGridTileComponent *Location = Grid->GetTile(ControlledPawn->GetActorLocation());		
-		if (Grid)
+	AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
+	if (Mode == EControllerMode::Navigation && GridPawn!=NULL)
+	{		
+		if (CanSelectPawn(GridPawn))
 		{
-			Grid->HideMovementRange();
-			if (Location)
-			{					
-				TArray<UGridTileComponent *> InRange;
-				Grid->TilesInMovementRange(Location, InRange, ControlledPawn, true);
-				if (InRange.Contains(&Tile))
-				{	
-					Busy = true;
-					Location->UnderCurrentPawn = false;
-					MovementComponent->MoveTo((UGridTileComponent &)Tile);
-					MovementComponent->HidePath();
-					//UnPossess();
-					EnableNavigationMode();
-				}
-			}			
-		}
+			SelectPawn(GridPawn);
+			if (!GridPawn->MovementComponent->HasMoved && !GridPawn->HasPlayed)
+			{
+				//print("here");
+				DisplayMovementRange();
+				Mode = EControllerMode::Movement;
+			}
+			
+		}		
 	}
+	else if (Mode == EControllerMode::Movement && IsValid(ControlledPawn))
+	{
+		if (!ControlledPawn->MovementComponent->HasMoved && !ControlledPawn->HasPlayed)
+		{
+			EnableMovementWidget();
+			ControlledPawn->MovementComponent->HidePath();
+			if (ControlledPawn->MovementComponent->CreatePath2(FocusedTile))
+			{				
+				ControlledPawn->MovementComponent->ShowPath();
+			}
+			else
+			{					
+				CancelMovement();
+			}
+		}				
+	}
+	else if (Mode == EControllerMode::Attack && IsValid(ControlledPawn))
+	{		
+		if (GridPawn && GridPawn != ControlledPawn && GridPawn->IsAttackableBy(ControlledPawn))
+		{
+			EnableAttackWidget();
+		}
+		if (!Tile.UnderCurrentPawn && Grid)
+		{
+			//print("here again");
+			AGridPawn *Target = Grid->GetPawn((UGridTileComponent *)&Tile);
+			if (Target && Target->IsAttackableBy(ControlledPawn))
+			{
+				//print("there");
+				ControlledPawn->Attack(Target, true);
+			}
+		}
+	}		
 }
 void AGridPawnPlayerController::EnableMovementMode()
 {
@@ -109,29 +178,43 @@ void AGridPawnPlayerController::EnableAttackMode()
 	Mode = EControllerMode::Attack;
 }
 
-void AGridPawnPlayerController::DisplayRange()
+void AGridPawnPlayerController::DisplayMovementRange()
+{	
+	AGridPawn *GridPawn = Cast<AGridPawn>(GetPawn());	
+	if (Grid != NULL && GridPawn)
+	{
+		Grid->HideHighlightedTiles();
+		UGridTileComponent* CurrentTile = Grid->GetTile(GridPawn->GetActorLocation());	
+		if (CurrentTile)
+		{
+			CurrentTile->UnderCurrentPawn = true;		
+			Grid->ShowMovementRange(CurrentTile, GridPawn);
+		}
+		else
+		{
+			//print("CurrentTile NULL");
+		}
+	}
+	else
+	{
+		//print("Itr null");
+	}
+}
+
+void AGridPawnPlayerController::DisplayEnemiesInRange()
 {
 	AGridPawn *GridPawn = Cast<AGridPawn>(GetPawn());
 	TActorIterator<ANavGrid>Itr(GetWorld());
 	if (*Itr != NULL && GridPawn)
 	{
-		Itr->HideMovementRange();
-		UGridTileComponent* CurrentTile = Itr->GetTile(GridPawn->GetActorLocation());
-		print(CurrentTile->GetOwner()->GetActorLabel());
+		Itr->HideHighlightedTiles();
+		UGridTileComponent *CurrentTile = Itr->GetTile(GridPawn->GetActorLocation());
 		if (CurrentTile)
 		{
 			CurrentTile->UnderCurrentPawn = true;
-			TArray<UGridTileComponent*> Out;
-			Itr->ShowMovementRange(CurrentTile, GridPawn);
+			Itr->ShowEnnemiesTileInRange(GridPawn);
 		}
-		else
-		{
-			print("CurrentTile NULL");
-		}
-	}
-	else
-	{
-		print("Itr null");
+
 	}
 }
 
@@ -142,10 +225,35 @@ void AGridPawnPlayerController::OnPawnMovementEnd(AGridPawn &GridPawn)
 	EnableEndMovementWidget();
 }
 
+void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
+{
+	if (FocusedTile == NULL)
+	{
+		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
+		FocusedTile = Tile;
+		if (NewTile)
+		{
+			NewTile->EnableCurrentTileOverlay();
+		}
+	}
+	else if (FocusedTile != NULL && FocusedTile!=Tile)
+	{
+		AGridTile *PreviousTile = Cast<AGridTile>(FocusedTile->GetOwner());		
+		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
+		FocusedTile = Tile;
+		if (PreviousTile && NewTile)
+		{
+			PreviousTile->DisableCurrentTileOverlay();
+			NewTile->EnableCurrentTileOverlay();
+		}
+	}	
+}
+
 void AGridPawnPlayerController::EnableMovementWidget()
 {
 	if (!Busy)
-	{
+	{	
+		EnableMovementMode();
 		ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 		GM->EnableMovementWidget();
 	}	
@@ -158,4 +266,61 @@ void AGridPawnPlayerController::EnableEndMovementWidget()
 		ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 		GM->EnableEndMovementWidget();
 	}	
+}
+
+void AGridPawnPlayerController::EnableAttackWidget()
+{
+	if (!Busy)
+	{
+		ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		GM->EnableAttackWidget();
+	}
+}
+
+void AGridPawnPlayerController::MovePawn()
+{
+	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
+	if (ControlledPawn)
+	{
+		Busy = true;
+		ControlledPawn->MovementComponent->HidePath();
+		Grid->HideHighlightedTiles();
+		ControlledPawn->MovementComponent->FollowPath();		
+	}
+}
+
+void AGridPawnPlayerController::CancelMovement()
+{
+	Grid->HideHighlightedTiles();
+	ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	GM->HideWidget();
+	Mode = EControllerMode::Navigation;
+	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
+	if (ControlledPawn)
+	{
+		ControlledPawn->MovementComponent->HidePath();
+	}
+}
+
+void AGridPawnPlayerController::Attack()
+{
+	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
+	AGridPawn *Target = Grid->GetPawn(FocusedTile);
+
+	if (Target && ControlledPawn)
+	{
+		ControlledPawn->Attack(Target,true);
+	}
+}
+
+void AGridPawnPlayerController::CancelAttack()
+{
+	Grid->HideHighlightedTiles();
+	UGridTileComponent *Tile = Grid->GetTile(GetPawn()->GetActorLocation());
+	if(Tile)
+	{
+		ChangeFocusedTile(Tile);
+		EnableEndMovementWidget();
+	}
+	
 }

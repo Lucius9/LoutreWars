@@ -24,30 +24,31 @@ public:
 	UPaperSpriteComponent *SpriteComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
-	UPaperSpriteComponent *OverlaySpriteComponent;
+	UPaperSpriteComponent *FocusOverlaySpriteComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
-	UPaperSpriteComponent *PathOverlaySpriteComponent;
+	UPaperSpriteComponent *BottomOverlaySpriteComponent;
 
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
-	UPaperSprite *OverlaySprite = NULL;*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sprite")
+	UPaperSpriteComponent *TopOverlaySpriteComponent;
 
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="Sprite")
-	UPaperSprite *Sprite=NULL;	*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Overlays")
+	UPaperSprite *MovementRangeOverlaySprite = NULL;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flipbook")
-	UPaperFlipbookComponent *FlipbookComponent = NULL;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Overlays")
+	UPaperSprite *AttackRangeOverlaySprite = NULL;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flipbook")
-	UPaperFlipbook *Flipbook = NULL;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Overlays")
+	UPaperSprite *AttackOverlaySprite = NULL;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Cost = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="Overlays")
+	UPaperSprite *PathOverlaySprite=NULL;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Overlays")
+	UPaperSprite *CurrentTileOverlaySprite;
+	
 	// Sets default values for this actor's properties
 	AGridTile();
-
-	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& e) override;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -55,9 +56,18 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
-	void EnableRangeOverlay();
-	void DisableRangeOverlay();
+	void EnableCurrentTileOverlay();
+	void DisableCurrentTileOverlay();
+
+	void EnableMovementRangeOverlay();
+	void DisableMovementRangeOverlay();
 
 	void EnablePathOverlay();
 	void DisablePathOverlay();
+
+	void EnableAttackRangeOverlay();
+	void DisableAttackRangeOverlay();
+
+	void EnableAttackOverlay();
+	void DisableAttackOverlay();
 };
