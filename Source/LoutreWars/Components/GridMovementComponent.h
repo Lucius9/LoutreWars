@@ -63,9 +63,8 @@ public:
 	bool IsMoving();
 
 	//Pathing
-public :
-	bool CreatePath(UGridTileComponent &Target);	
-	bool CreatePath2(UGridTileComponent *Target);
+public :	
+	bool CreatePath(UGridTileComponent *Target);
 	void ShowPath();
 	void HidePath();
 	bool MoveTo(UGridTileComponent &Target);

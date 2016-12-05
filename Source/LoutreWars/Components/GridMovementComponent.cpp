@@ -96,42 +96,7 @@ bool UGridMovementComponent::IsMoving()
 	return Moving;
 }
 
-bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
-{	
-	CurrentPath.Empty();
-	Spline->ClearSplinePoints(true);		
-	AGridPawn *Pawn = Cast<AGridPawn>(GetOwner());
-	CurrentTile = Grid->GetTile(Pawn->GetActorLocation());	
-	if (CurrentTile != NULL )
-	{
-		TArray<UGridTileComponent*> Range;
-		Grid->TilesInMovementRange(CurrentTile, Range, Pawn, true);		
-		if (Range.Contains(&Target))
-		{			
-			UGridTileComponent *Current = &Target;
-			while (Current)
-			{				
-				CurrentPath.Add(Current);
-				Current = Current->Backpointer;
-			}		
-			Algo::Reverse(CurrentPath);		
-
-			//print("Actor Location " + Pawn->GetActorLocation().ToString());
-			Spline->AddSplinePoint(Pawn->GetActorLocation(), ESplineCoordinateSpace::Local);
-			Spline->SetSplinePointType(0, ESplinePointType::Linear);
-			for (int i = 1; i < CurrentPath.Num(); ++i)
-			{
-			
-				CurrentPath[i]->AddSplinePoint(*Spline);				
-				Spline->SetSplinePointType(i, ESplinePointType::Linear);
-				
-			}				
-			return true;
-		}
-	}		
-	return false;
-}
-bool UGridMovementComponent::CreatePath2(UGridTileComponent *To)
+bool UGridMovementComponent::CreatePath(UGridTileComponent *To)
 {
 	AGridPawn *GridPawn = Cast<AGridPawn>(GetOwner());
 	TArray<UGridTileComponent*> Range;
@@ -269,7 +234,7 @@ void UGridMovementComponent::HidePath()
 
 bool UGridMovementComponent::MoveTo(UGridTileComponent &Target)
 {
-	if (CreatePath2(&Target))
+	if (CreatePath(&Target))
 	{
 		FollowPath();
 		return true;

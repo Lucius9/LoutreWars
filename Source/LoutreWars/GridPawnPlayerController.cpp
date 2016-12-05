@@ -81,7 +81,7 @@ void AGridPawnPlayerController::OnTileTouched(const UGridTileComponent &Tile)
 		{
 			EnableMovementWidget();
 			ControlledPawn->MovementComponent->HidePath();
-			if (ControlledPawn->MovementComponent->CreatePath2(FocusedTile))
+			if (ControlledPawn->MovementComponent->CreatePath(FocusedTile))
 			{
 				ControlledPawn->MovementComponent->ShowPath();
 			}
@@ -135,7 +135,7 @@ void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
 		{
 			EnableMovementWidget();
 			ControlledPawn->MovementComponent->HidePath();
-			if (ControlledPawn->MovementComponent->CreatePath2(FocusedTile))
+			if (ControlledPawn->MovementComponent->CreatePath(FocusedTile))
 			{				
 				ControlledPawn->MovementComponent->ShowPath();
 			}
