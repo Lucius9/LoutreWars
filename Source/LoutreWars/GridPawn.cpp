@@ -4,9 +4,10 @@
 #include "NavGrid.h"
 #include "GridPawnPlayerController.h"
 #include "GridPlayerState.h"
+#include "LoutreWarsGameMode.h"
 #include "GridPawn.h"
 
-#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 // Sets default values
 AGridPawn::AGridPawn()
@@ -37,7 +38,8 @@ AGridPawn::AGridPawn()
 	Arrow->SetHiddenInGame(false,true);
 
 	OnClicked.AddUniqueDynamic(this, &AGridPawn::OnActorClick);
-	//OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouch);	
+	OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouched);
+		
 }
 
 // Called when the game starts or when spawned
@@ -46,8 +48,7 @@ void AGridPawn::BeginPlay()
 	Super::BeginPlay();
 	ANavGrid* Grid = ANavGrid::GetNavGrid(GetWorld());
 	if (Grid!=NULL)
-	{
-		print(GetActorLocation().ToString());
+	{		
 		UGridTileComponent *CurrentTile = Grid->GetTile(GetActorLocation());
 		if (CurrentTile != NULL)
 		{			
@@ -55,12 +56,12 @@ void AGridPawn::BeginPlay()
 		}
 		else
 		{
-			print("BeginPlay CurrentTile NULL");
+			//print("BeginPlay CurrentTile NULL");
 		}
 	}
 	else
 	{
-		print("Begin Play Grid NULL");
+		//print("Begin Play Grid NULL");
 	}
 	
 }
@@ -72,42 +73,48 @@ void AGridPawn::Tick( float DeltaTime )
 
 }
 
-void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
-{		
-	if (!MovementComponent->IsMoving())
+void AGridPawn::OnActorTouched(ETouchIndex::Type FingerIndex, AActor *Actor)
+{
+	ANavGrid *Grid = ANavGrid::GetNavGrid(GetWorld());
+	if (Grid)
 	{
-		APlayerController *SomeController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
-		if (GPPC->GetPawn() != this)
+		UGridTileComponent *CurrentTile = Grid->GetTile(GetActorLocation());
+		if (CurrentTile)
 		{
-			GPPC->Possess(this);
+			Grid->OnTileTouched().Broadcast(*CurrentTile);
 		}
-		if (GPPC)
+	}
+}
+
+void AGridPawn::OnActorClick(AActor *Actor, FKey Key)
+{
+	ANavGrid* Grid = ANavGrid::GetNavGrid(GetWorld());
+	if (Grid)
+	{
+		UGridTileComponent *CurrentTile = Grid->GetTile(GetActorLocation());
+		if (CurrentTile)
 		{
-			GPPC->EnableMovementMode();			
+			Grid->OnTileClicked().Broadcast(*CurrentTile);
 		}
-		TActorIterator<ANavGrid>Itr(GetWorld());
-		if (*Itr != NULL)
+	}
+	/*APlayerController *SomeController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	AGridPawnPlayerController *GPPC = Cast<AGridPawnPlayerController>(SomeController);
+
+	if (GPPC && GPPC->CanSelectPawn(this))
+	{
+		GPPC->SelectPawn(this);
+		if (!MovementComponent->IsMoving())
 		{
-			Itr->HideMovementRange();
-			UGridTileComponent* CurrentTile = Itr->GetTile(GetActorLocation());
-			print(CurrentTile->GetOwner()->GetActorLabel());
-			if (CurrentTile)
+			if (MovementComponent->HasMoved == false && !HasPlayed)
 			{
-				CurrentTile->UnderCurrentPawn = true;
-				TArray<UGridTileComponent*> Out;
-				Itr->ShowMovementRange(CurrentTile, this);
+				GPPC->EnableMovementWidget();
 			}
-			else
+			else if (!HasPlayed)
 			{
-				print("CurrentTile NULL");
+				GPPC->EnableEndMovementWidget();
 			}
 		}
-		else
-		{
-			print("Itr null");
-		}
-	}	
+	}	*/
 }
 
 bool AGridPawn::IsMoving()
@@ -117,14 +124,14 @@ bool AGridPawn::IsMoving()
 
 bool AGridPawn::IsAttackableBy(AGridPawn *Attacker) 
 {
-	if (Attacker->ControlledByAI == ControlledByAI && Attacker->PlayerIndex == PlayerIndex)
+	if(Attacker->AutoPossessAI==AutoPossessAI )
 	{		
 		return false;
 	}
 	AGridPlayerState *MyState = Cast<AGridPlayerState>(PlayerState);
 	AGridPlayerState *AttackerState = Cast<AGridPlayerState>(Attacker->PlayerState);
-	print("Attacker : " + Attacker->GetActorLabel());
-	print("Target : " + GetActorLabel());
+	//print("Attacker : " + Attacker->GetActorLabel());
+	//print("Target : " + GetActorLabel());
 	if (MyState && AttackerState)
 	{
 		
@@ -133,12 +140,12 @@ bool AGridPawn::IsAttackableBy(AGridPawn *Attacker)
 			
 			return false;
 		}
-		print("return true");
+		//print("return true");
 		return true;		
 	}
 	else
 	{
-		print("cast failed");
+		//print("cast failed");
 		return false;
 	}
 	
@@ -155,8 +162,11 @@ void AGridPawn::Attack(AGridPawn *Defenser, bool attackable)
 			Defenser->Unit = Defenser->PV / Defenser->UnitPv;
 			tmp = (Defenser->Atc * Defenser->Unit) - (Def * Unit);
 			PV = PV - tmp;
-				if (PV)
-					Unit = PV / UnitPv;
+			if (PV)
+			{
+				Unit = PV / UnitPv;
+			}	
+			//print("Attack");
 		}
 	}
 }

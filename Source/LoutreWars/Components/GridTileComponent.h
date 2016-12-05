@@ -8,6 +8,14 @@
 #include "Components/SplineComponent.h"
 #include "GridTileComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EGridMovementMode : uint8
+{
+	Walking				UMETA(DisplayName = "Walking"),
+	Driving				UMETA(DisplayName = "Driving"),
+	Flying				UMETA(DisplayName = "Flying"),
+	Swimming			UMETA(DisplayName = "Swimming")
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LOUTREWARS_API UGridTileComponent : public USceneComponent
@@ -19,13 +27,16 @@ public:
 	UBoxComponent *Extent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float Cost;
+	float Cost=1.0f;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Neighbours")
 	TArray<UGridTileComponent*> Neighbours;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	USceneComponent *PawnLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MovementModes")
+	TArray<EGridMovementMode> TileMovementModes;
 
 	/* Distance from starting point of path */
 	float Distance;
@@ -37,7 +48,8 @@ public:
 	bool UnderCurrentPawn = false;
 
 protected:
-	class ANavGrid *Grid;	
+	class ANavGrid *Grid;
+	int FScore, HScore;
 	
 
 public:
@@ -54,17 +66,27 @@ public:
 	
 public :
 	FVector GetPawnLocation();
-	virtual bool Traversable(float MaxWalkAngle);
+	virtual bool Traversable(class AGridPawn *GridPawn);
 	/* is there anything blocking an actor from moving from FromPos to this tile? Uses the capsule for collision testing */
 	virtual bool Obstructed(const FVector &FromPos, const UCapsuleComponent &CollisionCapsule);
 	/* is there anything blocking an actor from moving between From and To? Uses the capsule for collision testing */
 	bool static Obstructed(const FVector &From, const FVector &To, const UCapsuleComponent &CollisionCapsule);
 	/* Return the neighbours that are not Obstructed() */
-	virtual void GetUnobstructedNeighbours(const UCapsuleComponent &CollisionCapsule, TArray<UGridTileComponent *> &OutNeighbours);	
+	virtual void GetUnobstructedNeighbours(const UCapsuleComponent &CollisionCapsule, TArray<UGridTileComponent *> &OutNeighbours);
+	virtual void GetTraversableNeighbours(class AGridPawn *GridPawn,TArray<UGridTileComponent *> &OutNeighbours);
 	/* Reset variables used in pathfinding */
 	virtual void ResetPath();	
 
+public:
+	
+	void ComputeHScore(UGridTileComponent *To);
+	int GetHScore();
+	int GetFScore();
+
 public : 
+	UFUNCTION()
+	void OnTileTouched(ETouchIndex::Type FingerIndex, UPrimitiveComponent *TouchedComponent);
+
 	UFUNCTION()
 	void OnTileCursorOver(UPrimitiveComponent* TouchedComponent);
 

@@ -15,11 +15,15 @@ class LOUTREWARS_API ANavGrid : public AActor
 
 protected:
 	TArray<AGridTile*>HighlightedTiles;
-	
+
+public :
+	static ECollisionChannel ECC_Tile;
+
 public:	
 	// Sets default values for this actor's properties
 	ANavGrid();
 
+	UFUNCTION(BlueprintCallable,Category="Utilities")
 	static ANavGrid *GetNavGrid(UWorld *World);
 
 	virtual void OnConstruction(const FTransform &Transform) override;
@@ -39,31 +43,41 @@ protected:
 public :
 	UGridTileComponent *GetTile(const FVector &Position);
 	AGridPawn *GetPawn(UGridTileComponent *Tile);
+
 	virtual void TilesInMovementRange(UGridTileComponent * Tile, TArray<UGridTileComponent*>& OutArray, AGridPawn *Pawn, bool DoCollisionTests);
-	virtual void ShowMovementRange(UGridTileComponent *Tile, AGridPawn *Pawn);
-	virtual void HideMovementRange();
-	static ECollisionChannel ECC_Tile;
+	virtual void ShowMovementRange(UGridTileComponent *Tile, AGridPawn *Pawn);	
 	virtual void TilesInAttackRange(AGridPawn *Pawn, TArray<UGridTileComponent*> &Out);
+	virtual void ShowAttackRange(AGridPawn *Pawn);
+	virtual void ShowEnnemiesTileInRange(AGridPawn* Pawn);
+	virtual void HideHighlightedTiles();	
+
+	UFUNCTION(BlueprintCallable, Category = "EnemiesDetection")
+	virtual bool IsThereEnemiesInRange(AGridPawn *Pawn);
+	UFUNCTION(BlueprintCallable, Category = "EnemiesDetection")
 	virtual void GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out);
 	
 
 public:
+	void TileTouched(UGridTileComponent &Tile);
 	void TileCursorOver(UGridTileComponent &Tile);
 	void EndTileCursorOver(UGridTileComponent &Tile);
 	void TileClicked(UGridTileComponent &Tile);
 
 /*Events Delegates*/
 public:
+	DECLARE_EVENT_OneParam(ANavGrid, FOnTileTouched, const UGridTileComponent&);
 	DECLARE_EVENT_OneParam(ANavGrid, FOnTileCursorOver, const UGridTileComponent&);
 	DECLARE_EVENT_OneParam(ANavGrid, FOnEndTileCursorOver, const UGridTileComponent&);
 	DECLARE_EVENT_OneParam(ANavGrid, FOnTileClicked, const UGridTileComponent&);
 
+	FOnTileTouched& OnTileTouched() { return OnTileTouchedEvent; }
 	FOnTileCursorOver& OnTileCursorOver() { return OnTileCursorOverEvent; }
 	FOnEndTileCursorOver& OnEndTileCursorOver() { return OnEndTileCursorOverEvent ; }
 	FOnTileClicked& OnTileClicked() { return OnTileClickedEvent; }
 
 private:
 	
+	FOnTileTouched OnTileTouchedEvent;
 	FOnTileCursorOver OnTileCursorOverEvent;
 	FOnEndTileCursorOver OnEndTileCursorOverEvent;
 	FOnTileClicked OnTileClickedEvent;

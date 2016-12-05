@@ -15,3 +15,39 @@ ALoutreWarsGameMode::ALoutreWarsGameMode()
 	PlayerStateClass = AGridPlayerState::StaticClass();
 }
 
+void ALoutreWarsGameMode::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass)
+{
+	if (CurrentWidget != nullptr)
+	{
+		CurrentWidget->RemoveFromViewport();
+		CurrentWidget = nullptr;
+	}
+	if (NewWidgetClass != nullptr)
+	{
+		CurrentWidget = CreateWidget<UUserWidget>(GetWorld(), NewWidgetClass);
+		if (CurrentWidget != nullptr)
+		{
+			CurrentWidget->AddToViewport();
+		}
+	}
+}
+
+void ALoutreWarsGameMode::HideWidget()
+{
+	ChangeMenuWidget(NULL);
+}
+
+void ALoutreWarsGameMode::EnableMovementWidget()
+{
+	ChangeMenuWidget(MovementWidgetClass);
+}
+
+void ALoutreWarsGameMode::EnableEndMovementWidget()
+{
+	ChangeMenuWidget(EndMovementWidgetClass);
+}
+
+void ALoutreWarsGameMode::EnableAttackWidget()
+{
+	ChangeMenuWidget(AttackWidgetClass);
+}

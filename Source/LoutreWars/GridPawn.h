@@ -25,13 +25,7 @@ public:
 	UPaperSpriteComponent *SpriteComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Component")
-	UArrowComponent *Arrow;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ControlledBy")
-	bool ControlledByAI;
-		
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ControlledBy")
-	int PlayerIndex;
+	UArrowComponent *Arrow;	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	int AttackRangeMin;
@@ -44,6 +38,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int Unit;
+
+	bool HasPlayed = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int UnitPv;
@@ -73,6 +69,9 @@ public:
 	
 	UFUNCTION()
 	void OnActorClick(AActor *Actor,FKey Key);
+
+	UFUNCTION()
+	void OnActorTouched(ETouchIndex::Type FingerIndex, AActor *Actor);
 
 	virtual bool IsAttackableBy(AGridPawn *Attacker);
 

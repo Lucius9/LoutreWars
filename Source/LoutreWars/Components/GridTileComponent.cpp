@@ -5,7 +5,7 @@
 #include "NavGrid.h"
 #include "GridTileComponent.h"
 
-#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 // Sets default values for this component's properties
 UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializer) 
@@ -21,6 +21,7 @@ UGridTileComponent::UGridTileComponent(const FObjectInitializer &ObjectInitializ
 	Extent->OnBeginCursorOver.AddDynamic(this, &UGridTileComponent::OnTileCursorOver);	
 	Extent->OnEndCursorOver.AddDynamic(this, &UGridTileComponent::OnEndTileCursorOver);
 	Extent->OnClicked.AddDynamic(this, &UGridTileComponent::OnTileClicked);
+	Extent->OnInputTouchEnd.AddDynamic(this, &UGridTileComponent::OnTileTouched);
 
 
 	PawnLocation = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this,"PawnLocation");
@@ -41,37 +42,7 @@ void UGridTileComponent::OnComponentCreated()
 	Super::OnComponentCreated();	
 	TArray<USceneComponent*>Children;
 	this->GetAttachParent()->GetChildrenComponents(false, Children);
-	FVector2D Size;
-	bool sizeInitialized = false;
-	for (int i = 0; i < Children.Num();++i)
-	{
-		USceneComponent* Child = Children[i];
-		UPaperFlipbookComponent *FlipbookComponent = Cast<UPaperFlipbookComponent>(Child);
-		UPaperSpriteComponent *MainSpriteComponent = Cast<UPaperSpriteComponent>(Child);
-		if (FlipbookComponent)
-		{
-			if (FlipbookComponent->GetFlipbook() != NULL)
-			{
-				UPaperSprite *Sprite = FlipbookComponent->GetFlipbook()->GetSpriteAtFrame(0);
-				Size = Sprite->GetSourceSize();
-				sizeInitialized = true;
-
-			}
-		}
-		else if (MainSpriteComponent)
-		{
-			if (MainSpriteComponent->GetSprite() != NULL)
-			{
-				Size = MainSpriteComponent->GetSprite()->GetSourceSize();
-				sizeInitialized = true;
-
-			}			
-		}
-	}
-	if (!sizeInitialized)
-	{
-		Size = FVector2D(16.0f, 16.0f);
-	}
+	FVector2D Size = FVector2D(16.0f, 16.0f);	
 	Extent->SetBoxExtent(FVector((Size.X)/2,0.0f,(Size.Y)/2));
 }
 
@@ -121,16 +92,19 @@ TArray<UGridTileComponent*>* UGridTileComponent::GetNeighbours()
 	}
 	return &Neighbours;
 }
-/*
-TODO add movementmode for legacy 
-	example: water tile accessible only for swimming pawns
-*/
-bool UGridTileComponent::Traversable(float MaxWalkAngle)
+
+
+bool UGridTileComponent::Traversable(class AGridPawn *GridPawn)
 {
-	FRotator Rot = GetComponentRotation();
-	if (Rot.Pitch < MaxWalkAngle && Rot.Pitch > -MaxWalkAngle)
+	for (EGridMovementMode PawnMovementMode : GridPawn->MovementComponent->AvailableMovementModes)
 	{
-		return true;
+		for (EGridMovementMode TileMovementMode : TileMovementModes)
+		{
+			if (PawnMovementMode == TileMovementMode)
+			{
+				return true;
+			}
+		}
 	}
 	return false;
 }
@@ -182,6 +156,19 @@ void UGridTileComponent::GetUnobstructedNeighbours(const UCapsuleComponent & Col
 	}
 }
 
+void UGridTileComponent::GetTraversableNeighbours(class AGridPawn *GridPawn, TArray<UGridTileComponent *> &OutNeighbours)
+{
+	OutNeighbours.Empty();
+	TArray<UGridTileComponent*> *TileNeighbours = GetNeighbours();
+	for (UGridTileComponent *N : *TileNeighbours)
+	{
+		if (N->Traversable(GridPawn))
+		{
+			OutNeighbours.Add(N);
+		}
+	}
+}
+
 void UGridTileComponent::ResetPath()
 {
 	Backpointer = NULL;
@@ -189,9 +176,35 @@ void UGridTileComponent::ResetPath()
 	Visited = false;
 }
 
+void UGridTileComponent::ComputeHScore(UGridTileComponent *To)
+{
+	FVector FromLocation = GetComponentLocation();
+	FVector ToLocation = To->GetComponentLocation();
+	
+	HScore= abs((ToLocation.X - FromLocation.X) + (ToLocation.Z - FromLocation.Z));
+}
+
+int UGridTileComponent::GetHScore()
+{
+	return HScore;
+}
+int UGridTileComponent::GetFScore()
+{
+	
+	return Distance + HScore;
+}
+
 FVector UGridTileComponent::GetPawnLocation()
 {
 	return PawnLocation->GetComponentLocation();
+}
+
+void UGridTileComponent::OnTileTouched(ETouchIndex::Type FingerIndex,UPrimitiveComponent *TouchedComponent)
+{
+	if (Grid && !UnderCurrentPawn)
+	{
+		Grid->TileTouched(*this);
+	}
 }
 
 void UGridTileComponent::OnTileCursorOver(UPrimitiveComponent* TouchedComponent)
@@ -214,7 +227,7 @@ void UGridTileComponent::OnTileClicked(UPrimitiveComponent* TouchedComponent, FK
 {
 	
 	if (Grid && !UnderCurrentPawn)
-	{
+	{	
 		Grid->TileClicked(*this);
 	}
 }

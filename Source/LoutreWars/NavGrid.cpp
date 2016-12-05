@@ -5,7 +5,7 @@
 #include "Tiles/GridTile.h"
 #include "NavGrid.h"
 
-#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 ECollisionChannel ANavGrid::ECC_Tile = ECollisionChannel::ECC_GameTraceChannel1; 
 
@@ -82,14 +82,13 @@ void ANavGrid::TilesInMovementRange(UGridTileComponent * Tile, TArray<UGridTileC
 	Current->Distance = 0;
 
 	TArray<UGridTileComponent*> Neighbours=*Current->GetNeighbours();	
-	//Current->GetUnobstructedNeighbours(*Pawn->Capsule, Neighbours);
-
+	
 	TArray<UGridTileComponent*> CheckList;
 	while(Current)
 	{		
 		Neighbours = *Current->GetNeighbours();
 		FVector CurrentPawnLocation = Current->PawnLocation->GetComponentLocation();
-		//Current->GetUnobstructedNeighbours(*Pawn->Capsule, Neighbours);		
+	
 		for (UGridTileComponent *Neighbour : Neighbours)
 		{	
 			FVector NeighbourPawnLocation = Neighbour->PawnLocation->GetComponentLocation();		
@@ -131,18 +130,43 @@ void ANavGrid::ShowMovementRange(UGridTileComponent *Tile, AGridPawn *Pawn)
 		AGridTile *TileActor = Cast<AGridTile>(Actor);
 		if (IsValid(TileActor))
 		{
-			TileActor->EnableRangeOverlay();
+			TileActor->EnableMovementRangeOverlay();
 			HighlightedTiles.Add(TileActor);
 		}
 	}
 }
 
-void ANavGrid::HideMovementRange()
+void ANavGrid::HideHighlightedTiles()
 {
 	for (AGridTile *T : HighlightedTiles)
 	{
-		T->DisableRangeOverlay();
+		T->DisableMovementRangeOverlay();
 	}
+}
+
+void ANavGrid::ShowEnnemiesTileInRange(AGridPawn *Pawn)
+{
+	UGridTileComponent *PawnTile = GetTile(Pawn->GetActorLocation());
+	TArray<UGridTileComponent *>AttackRange;
+	TilesInAttackRange(Pawn, AttackRange);
+	for (UGridTileComponent *T : AttackRange)
+	{
+		AGridPawn *Target = GetPawn(T);
+		if (Target && Target->IsAttackableBy(Pawn))
+		{
+			AGridTile *Tile = Cast<AGridTile>(T->GetOwner());
+			if (Tile)
+			{
+				Tile->EnableAttackOverlay();
+				HighlightedTiles.Add(Tile);
+			}
+		}
+	}
+}
+
+void ANavGrid::ShowAttackRange(AGridPawn *Pawn)
+{
+
 }
 
 UGridTileComponent * ANavGrid::LineTraceTile(const FVector &Start, const FVector &End)
@@ -187,6 +211,19 @@ AGridPawn * ANavGrid::LineTracePawn(const FVector &Start,const FVector &End)
 	}	
 	return NULL;
 }
+
+bool ANavGrid::IsThereEnemiesInRange(AGridPawn *Pawn)
+{
+	ResetTiles();
+	TArray<AGridPawn*> Out;
+	GetEnnemiesInRange(Pawn, Out);
+	if (Out.Num() > 0)
+	{
+		return true;
+	}
+	return false;
+}
+
 
 void ANavGrid::GetEnnemiesInRange(AGridPawn *Pawn, TArray<AGridPawn*> &Out)
 {
@@ -256,6 +293,11 @@ void ANavGrid::TilesInAttackRange(AGridPawn *Pawn, TArray<UGridTileComponent*> &
 	}		
 }
 
+void ANavGrid::TileTouched(UGridTileComponent &Tile)
+{
+	OnTileTouchedEvent.Broadcast(Tile);
+}
+
 void ANavGrid::TileCursorOver(UGridTileComponent &Tile)
 {	
 	OnTileCursorOverEvent.Broadcast(Tile);
@@ -267,7 +309,7 @@ void ANavGrid::EndTileCursorOver(UGridTileComponent &Tile)
 }
 
 void ANavGrid::TileClicked(UGridTileComponent &Tile)
-{
+{	
 	OnTileClickedEvent.Broadcast(Tile);
 }
 

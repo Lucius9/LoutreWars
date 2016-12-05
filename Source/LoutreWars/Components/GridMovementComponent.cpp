@@ -7,7 +7,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "GridMovementComponent.h"
 
-#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 float UGridMovementComponent::FaceRight = 0.0;
 float UGridMovementComponent::FaceLeft = 180.0f;
@@ -55,20 +55,22 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 	
 		if (Distance >= Spline->GetSplineLength())
 		{			
-			Moving = false;
+			Moving = false;			
 			Distance = 0;
-			Velocity = FVector::ZeroVector;
+			Velocity = FVector::ZeroVector;		
+			HasMoved = true;
 			//attack auto
 			AGridPawn *Pawn = Cast<AGridPawn>(Owner);
+			OnMovementEndEvent.Broadcast(*Pawn);
 			if (Pawn)
 			{		
-				print("here pppppp");
+				/*print("here pppppp");
 				TArray<AGridPawn *> EnnemiesInRange;
 				Grid->GetEnnemiesInRange(Pawn, EnnemiesInRange);
 				print("Ennemies : " + FString::FromInt(EnnemiesInRange.Num()));
 				if (EnnemiesInRange.Num() > 0) {
 					Pawn->Attack(EnnemiesInRange[0], true );
-				}
+				}*/
 			}
 		}
 		else
@@ -94,48 +96,117 @@ bool UGridMovementComponent::IsMoving()
 	return Moving;
 }
 
-bool UGridMovementComponent::CreatePath(UGridTileComponent &Target)
-{	
-	CurrentPath.Empty();
-	Spline->ClearSplinePoints(true);		
-	AGridPawn *Pawn = Cast<AGridPawn>(GetOwner());
-	CurrentTile = Grid->GetTile(Pawn->GetActorLocation());	
-	if (CurrentTile != NULL )
-	{
-		TArray<UGridTileComponent*> Range;
-		Grid->TilesInMovementRange(CurrentTile, Range, Pawn, true);		
-		if (Range.Contains(&Target))
-		{			
-			UGridTileComponent *Current = &Target;
+bool UGridMovementComponent::CreatePath(UGridTileComponent *To)
+{
+	AGridPawn *GridPawn = Cast<AGridPawn>(GetOwner());
+	TArray<UGridTileComponent*> Range;
+	UGridTileComponent *From = Grid->GetTile(GridPawn->GetActorLocation());
+	Grid->TilesInMovementRange(From, Range, GridPawn, true);	
+	Spline->ClearSplinePoints(true);
+	if (Range.Contains(To))
+	{		
+		CurrentPath.Empty();
+		OpenList.Empty();
+		ClosedList.Empty();
+
+		if (ComputePath(From, To))
+		{
+			UGridTileComponent *Current = From;
 			while (Current)
 			{				
 				CurrentPath.Add(Current);
 				Current = Current->Backpointer;
-			}		
-			Algo::Reverse(CurrentPath);		
-
-			print("Actor Location " + Pawn->GetActorLocation().ToString());
-			Spline->AddSplinePoint(Pawn->GetActorLocation(), ESplineCoordinateSpace::Local);
+			}			
+			Spline->AddSplinePoint(GridPawn->GetActorLocation(), ESplineCoordinateSpace::Local);
 			Spline->SetSplinePointType(0, ESplinePointType::Linear);
 			for (int i = 1; i < CurrentPath.Num(); ++i)
 			{
-			
-				CurrentPath[i]->AddSplinePoint(*Spline);				
+
+				CurrentPath[i]->AddSplinePoint(*Spline);
 				Spline->SetSplinePointType(i, ESplinePointType::Linear);
-				
-			}				
+
+			}			
 			return true;
-		}
-	}		
+		}		
+	}
 	return false;
 }
 
+bool UGridMovementComponent::ComputePath(UGridTileComponent *From, UGridTileComponent *To)
+{
+	AGridPawn *GridPawn = Cast<AGridPawn>(GetOwner());
+	To->Distance = 0;
+	To->Backpointer = NULL;
+	To->ComputeHScore(From);	
+	InsertInOpenList(To);		
+	while (OpenList.Num() != 0)
+	{
+		UGridTileComponent *Current = OpenList[0];
+		Current->ComputeHScore(From);
+		OpenList.Remove(Current);
+		ClosedList.Add(Current);
+		if (ClosedList.Contains(From))
+		{
+			//Path found 
+			return true;
+		}
+		TArray<UGridTileComponent *> TraversableNeighbours;
+		Current->GetTraversableNeighbours(GridPawn, TraversableNeighbours);		
+		for (UGridTileComponent *Tile : TraversableNeighbours)
+		{
+			if (ClosedList.Contains(Tile))
+			{
+				continue;
+			}
+			if (!OpenList.Contains(Tile))
+			{
+				Tile->Distance = Current->Distance + Tile->Cost;
+				Tile->ComputeHScore(From);
+				InsertInOpenList(Tile);
+				Tile->Backpointer = Current;
+			}
+			else
+			{
+				int OldFScore = Tile->GetFScore();
+				int NewGScore = Current->Distance + Tile->Cost;
+				int NewFScore = Tile->GetHScore() + NewGScore;
+				if (NewFScore<OldFScore)
+				{
+					OpenList.Remove(Tile);
+					Tile->Distance = NewGScore;
+					Tile->Backpointer = Current;
+					InsertInOpenList(Tile);
+				}
+			}
+		}
+	}
+	return false;
+}
+
+void UGridMovementComponent::InsertInOpenList(UGridTileComponent* Tile)
+{
+	int FScore = Tile->GetFScore();
+	int size = OpenList.Num();
+	int index = 0;
+	while (index < size)
+	{
+		if (FScore <= OpenList[index]->GetFScore())
+		{
+			break;
+		}
+		++index;
+	}
+	OpenList.Insert(Tile, index);
+}
+
+
 void UGridMovementComponent::ShowPath()
 {
-	print(FString::FromInt(CurrentPath.Num()));
+	//print(FString::FromInt(CurrentPath.Num()));
 	if (CurrentPath.Num() >= 1)
 	for (int i = 1; i < CurrentPath.Num();++i)
 	{
+		//print("show path");
 		AActor *Actor=CurrentPath[i]->GetOwner();
 		AGridTile *TileActor = Cast<AGridTile>(Actor);
 		if (IsValid(TileActor))
@@ -163,7 +234,7 @@ void UGridMovementComponent::HidePath()
 
 bool UGridMovementComponent::MoveTo(UGridTileComponent &Target)
 {
-	if (CreatePath(Target))
+	if (CreatePath(&Target))
 	{
 		FollowPath();
 		return true;
@@ -179,6 +250,32 @@ void UGridMovementComponent::FollowPath()
 void UGridMovementComponent::StopMoving()
 {
 	Moving = false;
+}
+
+void UGridMovementComponent::GoBackOnPreviousTile()
+{
+	HasMoved = false;
+	AActor *Actor = GetOwner();
+	UGridTileComponent *Start = CurrentPath[0];
+	Actor->SetActorLocation(Start->PawnLocation->GetComponentLocation());	
+	CurrentPitch = FaceRight;
+	FQuat CurrentQuat = FQuat(FVector::RightVector, FMath::DegreesToRadians(CurrentPitch));
+	Actor->SetActorRotation(CurrentQuat);
+}
+
+void UGridMovementComponent::EndMovement()
+{
+	AGridPawn *GridPawn = Cast<AGridPawn>(GetOwner());
+	if (GridPawn)
+	{
+		GridPawn->HasPlayed = true;
+		CurrentPath.Empty();
+		Spline->ClearSplinePoints(true);
+	}
+	else
+	{
+		//print("cast failed");
+	}
 }
 
 float UGridMovementComponent::LimitRotation(const float &OldPitch, const float &NewPitch, float DeltaSeconds)
