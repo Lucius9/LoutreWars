@@ -25,9 +25,11 @@ class LOUTREWARS_API AGridPawnPlayerController : public APlayerController
 protected :
 	ANavGrid *Grid;
 	EControllerMode Mode=EControllerMode::Navigation;
-	UGridTileComponent *FocusedTile;
 
 public:
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="FocusedTile")
+	UGridTileComponent *FocusedTile;
+
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="ControllerMode")
 	bool Busy = false;
 
@@ -74,4 +76,7 @@ public :
 	void Attack();
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void CancelAttack();
+public :
+	UFUNCTION(BLueprintCallable, Category = "FocusedTile")
+	AGridPawn * GetPawnOnFocusedTile();
 };

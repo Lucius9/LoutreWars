@@ -34,6 +34,9 @@ public:
 	int AttackRangeMax;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
+	FString PawnName = "GridPawn";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int PV;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
