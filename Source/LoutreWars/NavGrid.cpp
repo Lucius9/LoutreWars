@@ -247,7 +247,7 @@ UGridTileComponent* ANavGrid::GetTile(const FVector &Position)
 
 AGridPawn * ANavGrid::GetPawn(UGridTileComponent *Tile)
 {
-	return LineTracePawn(Tile->GetComponentLocation(), Tile->PawnLocation->GetComponentLocation());
+	return LineTracePawn(Tile->GetComponentLocation(), Tile->PawnLocation->GetComponentLocation()+FVector(0.0f,10.0f,0.0f));
 }
 
 void ANavGrid::ResetTiles()

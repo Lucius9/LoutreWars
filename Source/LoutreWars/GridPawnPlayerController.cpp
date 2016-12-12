@@ -111,7 +111,7 @@ void AGridPawnPlayerController::OnTileTouched(const UGridTileComponent &Tile)
 }
 
 void AGridPawnPlayerController::OnTileClicked(const UGridTileComponent &Tile)
-{	
+{		
 	ChangeFocusedTile((UGridTileComponent*)&Tile);
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
 	AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
@@ -227,6 +227,7 @@ void AGridPawnPlayerController::OnPawnMovementEnd(AGridPawn &GridPawn)
 
 void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
 {
+	ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 	if (FocusedTile == NULL)
 	{
 		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
@@ -234,6 +235,19 @@ void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
 		if (NewTile)
 		{
 			NewTile->EnableCurrentTileOverlay();
+			if (GM)
+			{					
+				GM->UpdateTileWidget();
+				AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
+				if (GridPawn)
+				{
+					GM->UpdatePawnWidget();
+				}
+				else
+				{
+					GM->HidePawnWidget();
+				}
+			}
 		}
 	}
 	else if (FocusedTile != NULL && FocusedTile!=Tile)
@@ -244,7 +258,20 @@ void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
 		if (PreviousTile && NewTile)
 		{
 			PreviousTile->DisableCurrentTileOverlay();
-			NewTile->EnableCurrentTileOverlay();
+			NewTile->EnableCurrentTileOverlay();		
+			if (GM)
+			{
+				GM->UpdateTileWidget();
+				AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
+				if (GridPawn )
+				{
+					GM->UpdatePawnWidget();
+				}
+				else
+				{
+					GM->HidePawnWidget();
+				}
+			}
 		}
 	}	
 }
@@ -282,7 +309,9 @@ void AGridPawnPlayerController::MovePawn()
 	AGridPawn *ControlledPawn = Cast<AGridPawn>(GetPawn());
 	if (ControlledPawn)
 	{
-		Busy = true;
+		UGridTileComponent* CurrentTile = Grid->GetTile(ControlledPawn->GetActorLocation());
+		CurrentTile->UnderCurrentPawn = false;
+		Busy = true;		
 		ControlledPawn->MovementComponent->HidePath();
 		Grid->HideHighlightedTiles();
 		ControlledPawn->MovementComponent->FollowPath();		
@@ -322,5 +351,13 @@ void AGridPawnPlayerController::CancelAttack()
 		ChangeFocusedTile(Tile);
 		EnableEndMovementWidget();
 	}
-	
+}
+
+AGridPawn * AGridPawnPlayerController::GetPawnOnFocusedTile()
+{
+	if (FocusedTile)
+	{
+		return Grid->GetPawn(FocusedTile);
+	}
+	return NULL;
 }

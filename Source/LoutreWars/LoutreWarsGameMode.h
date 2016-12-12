@@ -4,6 +4,7 @@
 
 #include "GameFramework/GameMode.h"
 #include "UserWidget.h"
+#include "HUD/NavigationWidget.h"
 #include "LoutreWarsGameMode.generated.h"
 
 /**
@@ -17,13 +18,20 @@ class LOUTREWARS_API ALoutreWarsGameMode : public AGameMode
 	
 public:
 	ALoutreWarsGameMode();
+	virtual void BeginPlay()override;
 
 	UFUNCTION(BlueprintCallable, Category = "UMG Game")
-	void ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass);
+	void ChangeActionWidget(TSubclassOf<UUserWidget> NewActionWidgetClass);	
 	void EnableMovementWidget();
 	void EnableEndMovementWidget();
 	void EnableAttackWidget();
 	void HideWidget();
+
+	void EnableNavigationWidget();
+	void DisableNavigationWidget();
+	void UpdateTileWidget();
+	void UpdatePawnWidget();
+	void HidePawnWidget();
 
 protected:
 	/** The widget class we will use as our menu when the game starts. */
@@ -36,11 +44,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UMG Game")
 	TSubclassOf<UUserWidget> EndMovementWidgetClass;
 
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UMG Game")
-	TSubclassOf<UUserWidget> ValidationWidgetClass;*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UMG Game")
+	TSubclassOf<UNavigationWidget> NavigationWidgetClass;		
 
 	/** The widget instance that we are using as our menu. */
 	UPROPERTY()
-	UUserWidget* CurrentWidget;
+	UUserWidget* CurrentActionWidget;
+
+	UPROPERTY()
+	UNavigationWidget *NavigationWidget;
 	
 };

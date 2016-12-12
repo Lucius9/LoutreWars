@@ -15,39 +15,88 @@ ALoutreWarsGameMode::ALoutreWarsGameMode()
 	PlayerStateClass = AGridPlayerState::StaticClass();
 }
 
-void ALoutreWarsGameMode::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass)
+void ALoutreWarsGameMode::BeginPlay()
 {
-	if (CurrentWidget != nullptr)
+	Super::BeginPlay();
+	EnableNavigationWidget();
+}
+
+void ALoutreWarsGameMode::ChangeActionWidget(TSubclassOf<UUserWidget> NewWidgetClass)
+{
+	if (CurrentActionWidget != nullptr)
 	{
-		CurrentWidget->RemoveFromViewport();
-		CurrentWidget = nullptr;
+		CurrentActionWidget->RemoveFromViewport();
+		CurrentActionWidget = nullptr;
 	}
 	if (NewWidgetClass != nullptr)
 	{
-		CurrentWidget = CreateWidget<UUserWidget>(GetWorld(), NewWidgetClass);
-		if (CurrentWidget != nullptr)
+		CurrentActionWidget = CreateWidget<UUserWidget>(GetWorld(), NewWidgetClass);		
+		if (CurrentActionWidget != nullptr)
 		{
-			CurrentWidget->AddToViewport();
+			CurrentActionWidget->AddToViewport();
 		}
 	}
 }
 
 void ALoutreWarsGameMode::HideWidget()
 {
-	ChangeMenuWidget(NULL);
+	ChangeActionWidget(NULL);
 }
 
 void ALoutreWarsGameMode::EnableMovementWidget()
 {
-	ChangeMenuWidget(MovementWidgetClass);
+	ChangeActionWidget(MovementWidgetClass);
 }
 
 void ALoutreWarsGameMode::EnableEndMovementWidget()
 {
-	ChangeMenuWidget(EndMovementWidgetClass);
+	ChangeActionWidget(EndMovementWidgetClass);
 }
 
 void ALoutreWarsGameMode::EnableAttackWidget()
 {
-	ChangeMenuWidget(AttackWidgetClass);
+	ChangeActionWidget(AttackWidgetClass);
+}
+
+
+void ALoutreWarsGameMode::EnableNavigationWidget()
+{
+	if (NavigationWidget == nullptr)
+	{
+		NavigationWidget = CreateWidget<UNavigationWidget>(GetWorld(), NavigationWidgetClass);
+		NavigationWidget->AddToViewport();
+	}
+}
+void ALoutreWarsGameMode::DisableNavigationWidget()
+{
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->RemoveFromViewport();
+		NavigationWidget = nullptr;
+	}
+}
+
+void ALoutreWarsGameMode::UpdateTileWidget()
+{
+	if (NavigationWidget != nullptr)
+	{
+		//NavigationWidget->HideTileWidget();
+		NavigationWidget->UpdateTileWidget();
+	}
+}
+
+void ALoutreWarsGameMode::UpdatePawnWidget()
+{
+	if (NavigationWidget != nullptr)
+	{		
+		NavigationWidget->UpdatePawnWidget();
+	}
+
+}
+void ALoutreWarsGameMode::HidePawnWidget()
+{
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->HidePawnWidget();
+	}
 }

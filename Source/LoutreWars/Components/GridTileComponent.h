@@ -26,8 +26,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
 	UBoxComponent *Extent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile Attributes")
+	FString GroundName ="Plaine";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile Attributes")
 	float Cost=1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile Attributes")
+	float Defense = 1.0f;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Neighbours")
 	TArray<UGridTileComponent*> Neighbours;
@@ -35,7 +41,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	USceneComponent *PawnLocation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MovementModes")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile Attributes")
 	TArray<EGridMovementMode> TileMovementModes;
 
 	/* Distance from starting point of path */
