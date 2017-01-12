@@ -57,20 +57,15 @@ void UGridMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 		{			
 			Moving = false;			
 			Distance = 0;
-			Velocity = FVector::ZeroVector;		
-			HasMoved = true;
+			Velocity = FVector::ZeroVector;			
 			//attack auto
+			//print("declenche event");
 			AGridPawn *Pawn = Cast<AGridPawn>(Owner);
 			OnMovementEndEvent.Broadcast(*Pawn);
 			if (Pawn)
 			{		
-				/*print("here pppppp");
-				TArray<AGridPawn *> EnnemiesInRange;
-				Grid->GetEnnemiesInRange(Pawn, EnnemiesInRange);
-				print("Ennemies : " + FString::FromInt(EnnemiesInRange.Num()));
-				if (EnnemiesInRange.Num() > 0) {
-					Pawn->Attack(EnnemiesInRange[0], true );
-				}*/
+				Pawn->HasMoved = true;
+				OnMovementEndEvent.Broadcast(*Pawn);
 			}
 		}
 		else
@@ -100,15 +95,14 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent *To)
 {
 	AGridPawn *GridPawn = Cast<AGridPawn>(GetOwner());
 	TArray<UGridTileComponent*> Range;
-	UGridTileComponent *From = Grid->GetTile(GridPawn->GetActorLocation());
+	UGridTileComponent *From = Grid->GetTile(GridPawn->GetActorLocation());	
 	Grid->TilesInMovementRange(From, Range, GridPawn, true);	
 	Spline->ClearSplinePoints(true);
 	if (Range.Contains(To))
 	{		
 		CurrentPath.Empty();
 		OpenList.Empty();
-		ClosedList.Empty();
-
+		ClosedList.Empty();	
 		if (ComputePath(From, To))
 		{
 			UGridTileComponent *Current = From;
@@ -128,7 +122,7 @@ bool UGridMovementComponent::CreatePath(UGridTileComponent *To)
 			}			
 			return true;
 		}		
-	}
+	}	
 	return false;
 }
 
@@ -140,7 +134,7 @@ bool UGridMovementComponent::ComputePath(UGridTileComponent *From, UGridTileComp
 	To->ComputeHScore(From);	
 	InsertInOpenList(To);		
 	while (OpenList.Num() != 0)
-	{
+	{		
 		UGridTileComponent *Current = OpenList[0];
 		Current->ComputeHScore(From);
 		OpenList.Remove(Current);
@@ -151,7 +145,7 @@ bool UGridMovementComponent::ComputePath(UGridTileComponent *From, UGridTileComp
 			return true;
 		}
 		TArray<UGridTileComponent *> TraversableNeighbours;
-		Current->GetTraversableNeighbours(GridPawn, TraversableNeighbours);		
+		Current->GetTraversableNeighbours(GridPawn, TraversableNeighbours);			
 		for (UGridTileComponent *Tile : TraversableNeighbours)
 		{
 			if (ClosedList.Contains(Tile))
@@ -253,9 +247,13 @@ void UGridMovementComponent::StopMoving()
 }
 
 void UGridMovementComponent::GoBackOnPreviousTile()
-{
-	HasMoved = false;
+{	
 	AActor *Actor = GetOwner();
+	AGridPawn *GridPawn = Cast<AGridPawn>(Actor);
+	if (GridPawn)
+	{
+		GridPawn->HasMoved = false;
+	}
 	UGridTileComponent *Start = CurrentPath[0];
 	Actor->SetActorLocation(Start->PawnLocation->GetComponentLocation());	
 	CurrentPitch = FaceRight;

@@ -39,6 +39,10 @@ AGridPawn::AGridPawn()
 
 	OnClicked.AddUniqueDynamic(this, &AGridPawn::OnActorClick);
 	OnInputTouchEnd.AddDynamic(this, &AGridPawn::OnActorTouched);
+
+	this->AIControllerClass = NULL;
+	this->AutoPossessAI = EAutoPossessAI::Disabled;
+	this->AutoPossessPlayer = EAutoReceiveInput::Disabled;
 		
 }
 
@@ -124,31 +128,11 @@ bool AGridPawn::IsMoving()
 
 bool AGridPawn::IsAttackableBy(AGridPawn *Attacker) 
 {
-	if(Attacker->AutoPossessAI==AutoPossessAI )
-	{		
-		return false;
-	}
-	AGridPlayerState *MyState = Cast<AGridPlayerState>(PlayerState);
-	AGridPlayerState *AttackerState = Cast<AGridPlayerState>(Attacker->PlayerState);
-	//print("Attacker : " + Attacker->GetActorLabel());
-	//print("Target : " + GetActorLabel());
-	if (MyState && AttackerState)
+	if (this->Faction != Attacker->Faction && this->Faction->TeamIndex != Attacker->Faction->TeamIndex)
 	{
-		
-		if (MyState->TeamIndex == AttackerState->TeamIndex)
-		{
-			
-			return false;
-		}
-		//print("return true");
-		return true;		
+		return true;
 	}
-	else
-	{
-		//print("cast failed");
-		return false;
-	}
-	
+	return false;
 }
 
 void AGridPawn::Attack(AGridPawn *Defenser, bool attackable)
@@ -169,6 +153,12 @@ void AGridPawn::Attack(AGridPawn *Defenser, bool attackable)
 			//print("Attack");
 		}
 	}
+}
+
+void AGridPawn::BeginTurn()
+{
+	HasMoved = false;
+	HasPlayed = false;	
 }
 
 /*void AGridPawn::OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey)

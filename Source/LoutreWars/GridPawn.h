@@ -6,6 +6,7 @@
 #include "PaperSpriteComponent.h"
 #include "Components/GridTileComponent.h"
 #include "Components/GridMovementComponent.h"
+#include "Faction/Faction.h"
 #include "GridPawn.generated.h"
 
 UCLASS()
@@ -42,7 +43,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int Unit;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Pawn Turn")
 	bool HasPlayed = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pawn Turn")
+	bool HasMoved = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int UnitPv;
@@ -58,6 +63,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "stat")
 	int DefSpe;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	AFaction *Faction;
 
 	// Sets default values for this pawn's properties
 	AGridPawn();
@@ -79,6 +87,8 @@ public:
 	virtual bool IsAttackableBy(AGridPawn *Attacker);
 
 	virtual void Attack(AGridPawn *Attacker, bool Attackable);
+
+	virtual void BeginTurn();
 
 /*	UFUNCTION()
 	void OnCapsuleClick(UPrimitiveComponent* pComponent, FKey inKey);

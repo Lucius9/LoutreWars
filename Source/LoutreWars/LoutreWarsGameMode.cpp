@@ -2,10 +2,12 @@
 
 #include "LoutreWars.h"
 #include "GridPawn.h"
-#include "GridPawnPlayerController.h"
 #include "GridPlayerState.h"
+#include "Levels/LWWorldSettings.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "LoutreWarsGameMode.h"
 
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 ALoutreWarsGameMode::ALoutreWarsGameMode()
 {
@@ -18,59 +20,150 @@ ALoutreWarsGameMode::ALoutreWarsGameMode()
 void ALoutreWarsGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ALWWorldSettings *WorldSettings = Cast<ALWWorldSettings>(GetWorldSettings());	
+	AGridPawnPlayerController *Player0=Cast<AGridPawnPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
+	if (Player0)
+	{	
+		for (TActorIterator<AFaction> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		{
+			if (ActorItr->Controller == NULL)
+			{
+				if (UKismetMathLibrary::ClassIsChildOf(ActorItr->ControllerClass, AAIController::StaticClass()))
+				{
+					InitAI(*ActorItr);
+				}
+				else if (UKismetMathLibrary::ClassIsChildOf(ActorItr->ControllerClass, AGridPawnPlayerController::StaticClass()))
+				{
+					InitPlayer(*ActorItr);
+				}
+			}
+		}
+	}
+	InitPlayerOrder();
 	EnableNavigationWidget();
 }
 
-void ALoutreWarsGameMode::ChangeActionWidget(TSubclassOf<UUserWidget> NewWidgetClass)
+void ALoutreWarsGameMode::InitPlayer(AFaction *Faction)
 {
-	if (CurrentActionWidget != nullptr)
-	{
-		CurrentActionWidget->RemoveFromViewport();
-		CurrentActionWidget = nullptr;
+	UWorld *World = GetWorld();	
+	AController *Controller = UGameplayStatics::GetPlayerController(World, Faction->PlayerNumber);
+	AGridPawnPlayerController *PlayerController=Cast<AGridPawnPlayerController>(Controller);
+	if (PlayerController)
+	{			
+		PlayerController->Faction = Faction;
+		PlayerController->InitPawns();
+		Faction->Controller = PlayerController;				
 	}
-	if (NewWidgetClass != nullptr)
+	else
 	{
-		CurrentActionWidget = CreateWidget<UUserWidget>(GetWorld(), NewWidgetClass);		
-		if (CurrentActionWidget != nullptr)
-		{
-			CurrentActionWidget->AddToViewport();
+		PlayerController=Cast<AGridPawnPlayerController>(World->SpawnActor(Faction->ControllerClass));
+		if (PlayerController)
+		{							
+			PlayerController->Faction = Faction;
+			PlayerController->InitPawns();
+			Faction->Controller = PlayerController;		
+			UGameInstance *GameInstance=World->GetGameInstance();
+			FString OutError;
+			ULocalPlayer *NewPlayer=GameInstance->CreateLocalPlayer(PlayerController->GetUniqueID(),OutError,false);
+			if (NewPlayer)
+			{
+				PlayerController->SetPlayer(NewPlayer);				
+			}
+			else
+			{
+				//print(OutError);
+			}			
 		}
 	}
 }
 
-void ALoutreWarsGameMode::HideWidget()
+void ALoutreWarsGameMode::InitAI(AFaction *Faction)
+{	
+	UWorld *World = GetWorld();
+	AGridAIController *Controller=Cast<AGridAIController>(World->SpawnActor(Faction->ControllerClass));
+	if (Controller)
+	{
+		Faction->Controller = Controller;
+		Controller->Faction = Faction;		
+		//Controller->OnAITurnEnd().AddUObject(this, &ALoutreWarsGameMode::OnPlayersTurnEnd);
+	}
+}
+
+void ALoutreWarsGameMode::InitPlayerOrder()
 {
-	ChangeActionWidget(NULL);
+	
+	TArray<AGridPawnPlayerController*> HumanPlayers;
+	for (TActorIterator<AGridPawnPlayerController>PCItr(GetWorld()) ; PCItr; ++PCItr)
+	{
+		HumanPlayers.Add(*PCItr);
+	}
+	int StartingPlayer = UKismetMathLibrary::RandomIntegerInRange(0, (HumanPlayers.Num() - 1));
+	HumanPlayers[StartingPlayer]->CurrentPlayerController = true;
+	PlayersOrder.Add(HumanPlayers[StartingPlayer]);
+	for (int i = 0; i < StartingPlayer; ++i)
+	{
+		PlayersOrder.Add(HumanPlayers[i]);
+	}
+	for (int i = StartingPlayer + 1; i < HumanPlayers.Num(); ++i)
+	{
+		PlayersOrder.Add(HumanPlayers[i]);
+	}
+	
+	
+	for (TActorIterator<AGridAIController>AIItr(GetWorld()); AIItr; ++AIItr)
+	{
+		PlayersOrder.Add(*AIItr);
+	}
+	CurrentPlayerIndex = 0;
 }
 
 void ALoutreWarsGameMode::EnableMovementWidget()
 {
-	ChangeActionWidget(MovementWidgetClass);
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->EnableMovementWidget();
+	}
 }
 
 void ALoutreWarsGameMode::EnableEndMovementWidget()
 {
-	ChangeActionWidget(EndMovementWidgetClass);
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->EnableEndMovementWidget();
+	}
 }
 
 void ALoutreWarsGameMode::EnableAttackWidget()
 {
-	ChangeActionWidget(AttackWidgetClass);
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->EnableAttackWidget();
+	}
 }
 
+void ALoutreWarsGameMode::DisableActionWidget()
+{
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->DisableActionWidget();
+	}
+}
 
 void ALoutreWarsGameMode::EnableNavigationWidget()
 {
 	if (NavigationWidget == nullptr)
 	{
-		NavigationWidget = CreateWidget<UNavigationWidget>(GetWorld(), NavigationWidgetClass);
+		APlayerController *Controller = Cast<APlayerController>(PlayersOrder[CurrentPlayerIndex]);		
+		NavigationWidget = CreateWidget<UNavigationWidget>(Controller, NavigationWidgetClass);
 		NavigationWidget->AddToViewport();
 	}
 }
 void ALoutreWarsGameMode::DisableNavigationWidget()
 {
 	if (NavigationWidget != nullptr)
-	{
+	{		
 		NavigationWidget->RemoveFromViewport();
 		NavigationWidget = nullptr;
 	}
@@ -82,6 +175,14 @@ void ALoutreWarsGameMode::UpdateTileWidget()
 	{
 		//NavigationWidget->HideTileWidget();
 		NavigationWidget->UpdateTileWidget();
+	}
+}
+
+void ALoutreWarsGameMode::HideTileWidget()
+{
+	if (NavigationWidget != nullptr)
+	{
+		NavigationWidget->HideTileWidget();
 	}
 }
 
@@ -99,4 +200,46 @@ void ALoutreWarsGameMode::HidePawnWidget()
 	{
 		NavigationWidget->HidePawnWidget();
 	}
+}
+
+void ALoutreWarsGameMode::SwitchCurrentPlayer()
+{
+	if (CurrentPlayerIndex == PlayersOrder.Num() - 1)
+	{
+		CurrentPlayerIndex = 0;
+		++TurnNumber;
+	}
+	else
+	{
+		++CurrentPlayerIndex;
+	}
+	if (PlayersOrder[CurrentPlayerIndex]->GetClass()->IsChildOf(AGridPawnPlayerController::StaticClass()))
+	{
+		EnableNavigationWidget();
+		AGridPawnPlayerController *PlayerController = Cast<AGridPawnPlayerController>(PlayersOrder[CurrentPlayerIndex]);
+		if (PlayerController)
+		{
+			PlayerController->CurrentPlayerController = true;
+			PlayerController->BeginTurn();
+		}
+	}
+	else if(PlayersOrder[CurrentPlayerIndex]->GetClass()->IsChildOf(AGridAIController::StaticClass()))
+	{
+		AGridAIController *AIController = Cast<AGridAIController>(PlayersOrder[CurrentPlayerIndex]);
+		if (AIController)
+		{
+			AIController->BeginTurn();
+		}
+	}
+	else
+	{
+		//print("not a player");
+	}
+}
+
+void ALoutreWarsGameMode::OnPlayersTurnEnd()
+{
+	//print("Je switch de player");
+	DisableNavigationWidget();
+	SwitchCurrentPlayer();
 }
