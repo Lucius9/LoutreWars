@@ -4,6 +4,7 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Visual.h"
+#include "GridPawnPlayerController.h"
 #include "NavigationWidget.generated.h"
 
 /**
@@ -19,7 +20,9 @@ public:
 	UUserWidget *CurrentTileWidget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget *CurrentPawnWidget;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget *ActionWidget;
+
 public:
 	virtual void NativeConstruct()override;
 	UFUNCTION(BlueprintNativeEvent, Category = "Tile Widget")
@@ -31,4 +34,13 @@ public:
 	void UpdatePawnWidget();
 	UFUNCTION(BlueprintNativeEvent, Category = "Pawn Widget")
 	void HidePawnWidget();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Action Widget")
+	void EnableMovementWidget();
+	UFUNCTION(BlueprintNativeEvent, Category = "Action Widget")
+	void EnableEndMovementWidget();
+	UFUNCTION(BlueprintNativeEvent, Category = "Action Widget")
+	void EnableAttackWidget();
+	UFUNCTION(BlueprintNativeEvent, Category = "Action Widget")
+	void DisableActionWidget();
 };

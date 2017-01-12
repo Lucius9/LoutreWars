@@ -104,7 +104,7 @@ void ANavGrid::TilesInMovementRange(UGridTileComponent * Tile, TArray<UGridTileC
 		}
 		Current->Visited = true;
 		CheckList.Remove(Current);		
-		if (Current != Tile && !Current->Obstructed(CurrentPawnLocation,*Pawn->Capsule))
+		if (!Current->Obstructed(CurrentPawnLocation,*Pawn->Capsule))
 		{			
 			OutArray.Add(Current);
 		}

@@ -3,6 +3,7 @@
 #include "LoutreWars.h"
 #include "NavigationWidget.h"
 
+//#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::Green,text)
 
 void UNavigationWidget::NativeConstruct()
 {
@@ -25,6 +26,27 @@ void UNavigationWidget::UpdatePawnWidget_Implementation()
 }
 
 void UNavigationWidget::HidePawnWidget_Implementation()
+{
+
+}
+
+
+void UNavigationWidget::EnableMovementWidget_Implementation()
+{
+	
+}
+
+void UNavigationWidget::EnableEndMovementWidget_Implementation()
+{
+
+}
+
+void UNavigationWidget::EnableAttackWidget_Implementation()
+{
+
+}
+
+void UNavigationWidget::DisableActionWidget_Implementation()
 {
 
 }

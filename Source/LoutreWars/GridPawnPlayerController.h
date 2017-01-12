@@ -4,6 +4,7 @@
 
 #include "GameFramework/PlayerController.h"
 #include "NavGrid.h"
+#include "Faction/Faction.h"
 #include "GridPawnPlayerController.generated.h"
 
 /**
@@ -27,8 +28,14 @@ protected :
 	EControllerMode Mode=EControllerMode::Navigation;
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	AFaction *Faction;
+
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="FocusedTile")
 	UGridTileComponent *FocusedTile;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ControllerMode")
+	bool CurrentPlayerController = false;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="ControllerMode")
 	bool Busy = false;
@@ -38,6 +45,7 @@ public:
 
 public:
 	AGridPawnPlayerController();
+	void InitPawns();
 	virtual void BeginPlay()override;
 	virtual bool CanSelectPawn(AGridPawn *GridPawn);
 	virtual void SelectPawn(AGridPawn *GridPawn);	
@@ -56,22 +64,38 @@ public :
 	UFUNCTION(BlueprintCallable, Category = "ControllerMode")
 	void EnableAttackMode();
 
+	DECLARE_EVENT(AGridPawnPlayerController, FOnTurnEnd);
+
+	FOnTurnEnd OnTurnEnd() { return TurnEndEvent; };
+
+private :
+	FOnTurnEnd TurnEndEvent;
+
+public :
+	UFUNCTION(BlueprintCallable, Category = "Controller Turn Management")
+	virtual void BeginTurn();
+	UFUNCTION(BlueprintCallable,Category="Controller Turn Management")
+	virtual void TurnEnd();
+
 public :
 	void EnableMovementWidget();
 	void EnableEndMovementWidget();
 	void EnableAttackWidget();
 
 public :
-	UFUNCTION(BlueprintCallable,Category="Movement")
+	UFUNCTION(BlueprintCallable, Category = "Display")
 	void DisplayMovementRange();
+	UFUNCTION(BlueprintCallable, Category = "Display")
+	void DisplayEnemiesInRange();
+	UFUNCTION(BlueprintCallable, Category = "Display")
+	void HideRange();
+public :	
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void MovePawn();
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void CancelMovement();
 
-public :
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void DisplayEnemiesInRange();
+public :	
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void Attack();
 	UFUNCTION(BlueprintCallable, Category = "Attack")

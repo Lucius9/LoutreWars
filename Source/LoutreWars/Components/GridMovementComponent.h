@@ -41,8 +41,6 @@ public :
 	static float FaceLeft;
 	static float FaceRight;	
 
-	bool HasMoved = false;
-
 protected:	
 	UGridTileComponent *CurrentTile;
 	TArray<UGridTileComponent *>CurrentPath;
