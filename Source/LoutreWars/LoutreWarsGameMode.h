@@ -29,9 +29,10 @@ public :
 
 protected:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UMG Game")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UMG")
 	TSubclassOf<UNavigationWidget> NavigationWidgetClass;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UMG")
+	TSubclassOf<UUserWidget> TransitionWidgetClass;
 	UPROPERTY()
 	UNavigationWidget *NavigationWidget;
 	
@@ -40,22 +41,33 @@ public:
 	virtual void BeginPlay()override;
 
 	void InitPlayer(AFaction *Faction);
+	void CreatePlayer(AFaction *Faction);
 	void InitAI(AFaction *Faction);
 	void InitPlayerOrder();
+	UFUNCTION(BlueprintCallable, Category = "LoutreWars Current Player")
+	void BeginTurnCurrentPlayer();
+
+public:
+	UFUNCTION(BlueprintCallable, Category="Loutre Wars Current Player")
+	AFaction *GetCurrentPlayerFaction();
+	UFUNCTION(BlueprintCallable, Category = "Loutre Wars Current Player")
+	bool IsCurrentPlayerAI();
+	UFUNCTION(BlueprintCallable, Category = "Loutre Wars Current Player")
+	bool IsCurrentPlayerHuman();
 
 public :	
 	void EnableMovementWidget();
 	void EnableEndMovementWidget();
 	void EnableAttackWidget();	
 	void DisableActionWidget();
-
 	void EnableNavigationWidget();
 	void DisableNavigationWidget();
 	void UpdateTileWidget();
 	void HideTileWidget();
 	void UpdatePawnWidget();
 	void HidePawnWidget();	
-
+public :
+	void AddTransitionWidget();
 public :
 	UFUNCTION(BlueprintCallable, Category = "Turn Management")
 	virtual void SwitchCurrentPlayer();

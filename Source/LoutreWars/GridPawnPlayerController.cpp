@@ -226,55 +226,7 @@ void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
 				GM->UpdatePawnWidget();
 			}			
 		}
-	}
-
-
-	/*if (FocusedTile == NULL)
-	{
-		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
-		FocusedTile = Tile;
-		if (NewTile)
-		{
-			NewTile->EnableCurrentTileOverlay();
-			if (GM)
-			{					
-				GM->UpdateTileWidget();
-				AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
-				if (GridPawn)
-				{
-					GM->UpdatePawnWidget();
-				}
-				else
-				{
-					GM->HidePawnWidget();
-				}
-			}
-		}
 	}	
-	else if (FocusedTile != NULL && FocusedTile!=Tile)
-	{
-		AGridTile *PreviousTile = Cast<AGridTile>(FocusedTile->GetOwner());		
-		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
-		FocusedTile = Tile;
-		if (PreviousTile && NewTile)
-		{
-			PreviousTile->DisableCurrentTileOverlay();
-			NewTile->EnableCurrentTileOverlay();		
-			if (GM)
-			{
-				GM->UpdateTileWidget();
-				AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
-				if (GridPawn )
-				{
-					GM->UpdatePawnWidget();
-				}
-				else
-				{
-					GM->HidePawnWidget();
-				}
-			}
-		}
-	}*/
 }
 
 void AGridPawnPlayerController::EnableMovementWidget()
@@ -413,6 +365,7 @@ AGridPawn * AGridPawnPlayerController::GetPawnOnFocusedTile()
 
 void AGridPawnPlayerController::BeginTurn()
 {
+	CurrentPlayerController = true;
 	for (AGridPawn *GridPawn : PawnsList)
 	{
 		GridPawn->BeginTurn();
