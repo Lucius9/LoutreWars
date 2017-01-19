@@ -19,9 +19,7 @@ ALoutreWarsGameMode::ALoutreWarsGameMode()
 
 void ALoutreWarsGameMode::BeginPlay()
 {
-	Super::BeginPlay();
-
-	ALWWorldSettings *WorldSettings = Cast<ALWWorldSettings>(GetWorldSettings());	
+	Super::BeginPlay();		
 	AGridPawnPlayerController *Player0=Cast<AGridPawnPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 
 	if (Player0)
@@ -42,7 +40,7 @@ void ALoutreWarsGameMode::BeginPlay()
 		}
 	}
 	InitPlayerOrder();
-	EnableNavigationWidget();
+	AddTransitionWidget();
 }
 
 void ALoutreWarsGameMode::InitPlayer(AFaction *Faction)
@@ -58,23 +56,29 @@ void ALoutreWarsGameMode::InitPlayer(AFaction *Faction)
 	}
 	else
 	{
-		PlayerController=Cast<AGridPawnPlayerController>(World->SpawnActor(Faction->ControllerClass));
-		if (PlayerController)
-		{							
-			PlayerController->Faction = Faction;
-			PlayerController->InitPawns();
-			Faction->Controller = PlayerController;		
-			UGameInstance *GameInstance=World->GetGameInstance();
-			FString OutError;
-			ULocalPlayer *NewPlayer=GameInstance->CreateLocalPlayer(PlayerController->GetUniqueID(),OutError,false);
-			if (NewPlayer)
-			{
-				PlayerController->SetPlayer(NewPlayer);				
-			}
-			else
-			{
-				//print(OutError);
-			}			
+		CreatePlayer(Faction);
+	}
+}
+
+void ALoutreWarsGameMode::CreatePlayer(AFaction *Faction)
+{
+	UWorld *World = GetWorld();
+	AGridPawnPlayerController *PlayerController = Cast<AGridPawnPlayerController>(World->SpawnActor(Faction->ControllerClass));
+	if (PlayerController)
+	{
+		PlayerController->Faction = Faction;
+		PlayerController->InitPawns();
+		Faction->Controller = PlayerController;
+		UGameInstance *GameInstance = World->GetGameInstance();
+		FString OutError;
+		ULocalPlayer *NewPlayer = GameInstance->CreateLocalPlayer(PlayerController->GetUniqueID(), OutError, false);
+		if (NewPlayer)
+		{
+			PlayerController->SetPlayer(NewPlayer);
+		}
+		else
+		{
+			//print(OutError);
 		}
 	}
 }
@@ -93,30 +97,108 @@ void ALoutreWarsGameMode::InitAI(AFaction *Faction)
 
 void ALoutreWarsGameMode::InitPlayerOrder()
 {
-	
-	TArray<AGridPawnPlayerController*> HumanPlayers;
-	for (TActorIterator<AGridPawnPlayerController>PCItr(GetWorld()) ; PCItr; ++PCItr)
+	ALWWorldSettings *WorldSettings = Cast<ALWWorldSettings>(GetWorldSettings());
+	if (WorldSettings && !WorldSettings->bRandomPlayersOrder)
 	{
-		HumanPlayers.Add(*PCItr);
+		for (AFaction *Faction : WorldSettings->PlayersOrder)
+		{
+			PlayersOrder.Add(Faction->Controller);
+		}
+		
 	}
-	int StartingPlayer = UKismetMathLibrary::RandomIntegerInRange(0, (HumanPlayers.Num() - 1));
-	HumanPlayers[StartingPlayer]->CurrentPlayerController = true;
-	PlayersOrder.Add(HumanPlayers[StartingPlayer]);
-	for (int i = 0; i < StartingPlayer; ++i)
+	else if (WorldSettings && WorldSettings->bRandomPlayersOrder && WorldSettings->bHumanPlayersFirst)
 	{
-		PlayersOrder.Add(HumanPlayers[i]);
+		TArray<AGridPawnPlayerController*> HumanPlayers;
+		TArray<AGridAIController*> AIPlayers;
+		for (TActorIterator<AFaction> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		{
+			if (ActorItr->Controller->GetClass()->IsChildOf(AGridPawnPlayerController::StaticClass()))
+			{
+				HumanPlayers.Add(Cast<AGridPawnPlayerController>(ActorItr->Controller));
+			}			
+			else if(ActorItr->Controller->GetClass()->IsChildOf(AGridAIController::StaticClass()))
+			{
+				AIPlayers.Add(Cast<AGridAIController>(ActorItr->Controller));
+			}			
+		}
+		while (HumanPlayers.Num() > 0)
+		{
+			int j = FMath::RandRange(0, HumanPlayers.Num() - 1);
+			PlayersOrder.Add(HumanPlayers[j]);
+			HumanPlayers.RemoveAtSwap(j);
+		}
+		while (AIPlayers.Num() > 0)
+		{
+			int j = FMath::RandRange(0, AIPlayers.Num() - 1);
+			PlayersOrder.Add(AIPlayers[j]);
+			AIPlayers.RemoveAtSwap(j);
+		}
 	}
-	for (int i = StartingPlayer + 1; i < HumanPlayers.Num(); ++i)
+	else
 	{
-		PlayersOrder.Add(HumanPlayers[i]);
-	}
-	
-	
-	for (TActorIterator<AGridAIController>AIItr(GetWorld()); AIItr; ++AIItr)
-	{
-		PlayersOrder.Add(*AIItr);
+		TArray<AController *> ArrayToShuffle;
+		for (TActorIterator<AFaction> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		{
+			ArrayToShuffle.Add(ActorItr->Controller);
+		}
+		while (ArrayToShuffle.Num() > 0)
+		{
+			int j = FMath::RandRange(0, ArrayToShuffle.Num() - 1);
+			PlayersOrder.Add(ArrayToShuffle[j]);
+			ArrayToShuffle.RemoveAtSwap(j);
+		}
 	}
 	CurrentPlayerIndex = 0;
+}
+
+void ALoutreWarsGameMode::BeginTurnCurrentPlayer()
+{
+	if (IsCurrentPlayerHuman())
+	{		
+		AGridPawnPlayerController *PlayerController = Cast<AGridPawnPlayerController>(PlayersOrder[CurrentPlayerIndex]);
+		EnableNavigationWidget();
+		PlayerController->BeginTurn();
+	}
+	else
+	{
+		AGridAIController *AIController = Cast<AGridAIController>(PlayersOrder[CurrentPlayerIndex]);
+		AIController->BeginTurn();
+	}
+}
+
+AFaction* ALoutreWarsGameMode::GetCurrentPlayerFaction()
+{
+	if (IsCurrentPlayerAI())
+	{
+		AGridAIController *AIController = Cast<AGridAIController>(PlayersOrder[CurrentPlayerIndex]);
+		return AIController->Faction;
+	}
+	else if (IsCurrentPlayerHuman())
+	{
+		AGridPawnPlayerController *PlayerController = Cast<AGridPawnPlayerController>(PlayersOrder[CurrentPlayerIndex]);
+		return PlayerController->Faction;
+	}
+	return NULL;
+}
+
+bool ALoutreWarsGameMode::IsCurrentPlayerAI()
+{
+	AController *Controller = PlayersOrder[CurrentPlayerIndex];
+	if (Controller->GetClass()->IsChildOf(AGridAIController::StaticClass()))
+	{
+		return true;
+	}
+	return false;
+}
+
+bool ALoutreWarsGameMode::IsCurrentPlayerHuman()
+{
+	AController *Controller = PlayersOrder[CurrentPlayerIndex];
+	if (Controller->GetClass()->IsChildOf(AGridPawnPlayerController::StaticClass()))
+	{
+		return true;
+	}
+	return false;
 }
 
 void ALoutreWarsGameMode::EnableMovementWidget()
@@ -157,8 +239,8 @@ void ALoutreWarsGameMode::EnableNavigationWidget()
 	{
 		APlayerController *Controller = Cast<APlayerController>(PlayersOrder[CurrentPlayerIndex]);		
 		NavigationWidget = CreateWidget<UNavigationWidget>(Controller, NavigationWidgetClass);
-		NavigationWidget->AddToViewport();
-	}
+		NavigationWidget->AddToViewport();		
+	}	
 }
 void ALoutreWarsGameMode::DisableNavigationWidget()
 {
@@ -172,8 +254,7 @@ void ALoutreWarsGameMode::DisableNavigationWidget()
 void ALoutreWarsGameMode::UpdateTileWidget()
 {
 	if (NavigationWidget != nullptr)
-	{
-		//NavigationWidget->HideTileWidget();
+	{		
 		NavigationWidget->UpdateTileWidget();
 	}
 }
@@ -202,6 +283,12 @@ void ALoutreWarsGameMode::HidePawnWidget()
 	}
 }
 
+void ALoutreWarsGameMode::AddTransitionWidget()
+{
+	UUserWidget *TransitionWidget=CreateWidget<UUserWidget>(GetWorld(), TransitionWidgetClass);
+	TransitionWidget->AddToViewport();
+}
+
 void ALoutreWarsGameMode::SwitchCurrentPlayer()
 {
 	if (CurrentPlayerIndex == PlayersOrder.Num() - 1)
@@ -212,29 +299,7 @@ void ALoutreWarsGameMode::SwitchCurrentPlayer()
 	else
 	{
 		++CurrentPlayerIndex;
-	}
-	if (PlayersOrder[CurrentPlayerIndex]->GetClass()->IsChildOf(AGridPawnPlayerController::StaticClass()))
-	{
-		EnableNavigationWidget();
-		AGridPawnPlayerController *PlayerController = Cast<AGridPawnPlayerController>(PlayersOrder[CurrentPlayerIndex]);
-		if (PlayerController)
-		{
-			PlayerController->CurrentPlayerController = true;
-			PlayerController->BeginTurn();
-		}
-	}
-	else if(PlayersOrder[CurrentPlayerIndex]->GetClass()->IsChildOf(AGridAIController::StaticClass()))
-	{
-		AGridAIController *AIController = Cast<AGridAIController>(PlayersOrder[CurrentPlayerIndex]);
-		if (AIController)
-		{
-			AIController->BeginTurn();
-		}
-	}
-	else
-	{
-		//print("not a player");
-	}
+	}	
 }
 
 void ALoutreWarsGameMode::OnPlayersTurnEnd()
@@ -242,4 +307,5 @@ void ALoutreWarsGameMode::OnPlayersTurnEnd()
 	//print("Je switch de player");
 	DisableNavigationWidget();
 	SwitchCurrentPlayer();
+	AddTransitionWidget();
 }

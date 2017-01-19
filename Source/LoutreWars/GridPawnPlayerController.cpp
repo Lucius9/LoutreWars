@@ -18,9 +18,6 @@ AGridPawnPlayerController::AGridPawnPlayerController()
 	DefaultMouseCursor = EMouseCursor::Default;
 	DefaultClickTraceChannel = ECC_Visibility;	
 	FInputModeGameAndUI InputMode;
-	/*InputMode.SetHideCursorDuringCapture(false);
-	InputMode.SetLockMouseToViewport(false);	
-	SetInputMode(InputMode);*/
 }
 
 void AGridPawnPlayerController::InitPawns()
@@ -197,6 +194,11 @@ void AGridPawnPlayerController::OnPawnMovementEnd(AGridPawn &GridPawn)
 	SelectPawn(&GridPawn);
 	Busy = false;
 	EnableEndMovementWidget();
+	ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (GM)
+	{
+		GM->UpdatePawnWidget();
+	}		
 }
 
 void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
@@ -226,55 +228,7 @@ void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
 				GM->UpdatePawnWidget();
 			}			
 		}
-	}
-
-
-	/*if (FocusedTile == NULL)
-	{
-		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
-		FocusedTile = Tile;
-		if (NewTile)
-		{
-			NewTile->EnableCurrentTileOverlay();
-			if (GM)
-			{					
-				GM->UpdateTileWidget();
-				AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
-				if (GridPawn)
-				{
-					GM->UpdatePawnWidget();
-				}
-				else
-				{
-					GM->HidePawnWidget();
-				}
-			}
-		}
 	}	
-	else if (FocusedTile != NULL && FocusedTile!=Tile)
-	{
-		AGridTile *PreviousTile = Cast<AGridTile>(FocusedTile->GetOwner());		
-		AGridTile *NewTile = Cast<AGridTile>(Tile->GetOwner());
-		FocusedTile = Tile;
-		if (PreviousTile && NewTile)
-		{
-			PreviousTile->DisableCurrentTileOverlay();
-			NewTile->EnableCurrentTileOverlay();		
-			if (GM)
-			{
-				GM->UpdateTileWidget();
-				AGridPawn *GridPawn = Grid->GetPawn(FocusedTile);
-				if (GridPawn )
-				{
-					GM->UpdatePawnWidget();
-				}
-				else
-				{
-					GM->HidePawnWidget();
-				}
-			}
-		}
-	}*/
 }
 
 void AGridPawnPlayerController::EnableMovementWidget()
@@ -413,6 +367,7 @@ AGridPawn * AGridPawnPlayerController::GetPawnOnFocusedTile()
 
 void AGridPawnPlayerController::BeginTurn()
 {
+	CurrentPlayerController = true;
 	for (AGridPawn *GridPawn : PawnsList)
 	{
 		GridPawn->BeginTurn();

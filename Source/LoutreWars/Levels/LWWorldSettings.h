@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/WorldSettings.h"
+#include "Faction/Faction.h"
 #include "LWWorldSettings.generated.h"
 
 /**
@@ -20,4 +21,10 @@ public:
 	uint8 NumberOfPlayer = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loutre Wars Game")
 	uint8 NumberOfAI = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loutre Wars Game")
+	bool bRandomPlayersOrder;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loutre Wars Game", meta = (EditCondition = "bRandomPlayersOrder"))
+	bool bHumanPlayersFirst;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Loutre Wars Game", meta = (EditCondition = "!bRandomPlayersOrder"))
+	TArray<AFaction*> PlayersOrder;
 };
