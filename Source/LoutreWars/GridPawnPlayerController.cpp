@@ -18,9 +18,6 @@ AGridPawnPlayerController::AGridPawnPlayerController()
 	DefaultMouseCursor = EMouseCursor::Default;
 	DefaultClickTraceChannel = ECC_Visibility;	
 	FInputModeGameAndUI InputMode;
-	/*InputMode.SetHideCursorDuringCapture(false);
-	InputMode.SetLockMouseToViewport(false);	
-	SetInputMode(InputMode);*/
 }
 
 void AGridPawnPlayerController::InitPawns()
@@ -197,6 +194,11 @@ void AGridPawnPlayerController::OnPawnMovementEnd(AGridPawn &GridPawn)
 	SelectPawn(&GridPawn);
 	Busy = false;
 	EnableEndMovementWidget();
+	ALoutreWarsGameMode *GM = Cast<ALoutreWarsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (GM)
+	{
+		GM->UpdatePawnWidget();
+	}		
 }
 
 void AGridPawnPlayerController::ChangeFocusedTile(UGridTileComponent *Tile)
